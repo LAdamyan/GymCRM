@@ -13,6 +13,7 @@ import org.mockito.MockitoAnnotations;
 import java.lang.reflect.Field;
 import java.util.logging.Logger;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 public class TrainerServiceImplTest {
@@ -20,57 +21,82 @@ public class TrainerServiceImplTest {
     @Mock
     private TrainerDAO trainerDAO;
 
-    @Mock
-    private Logger logger;
-
     @InjectMocks
     private TrainerServiceImpl trainerService;
 
     @BeforeEach
     void setUp() throws Exception {
-        MockitoAnnotations.openMocks(this);
-        setLogger(trainerService, logger);
+        MockitoAnnotations.initMocks(this);
     }
 
-    private void setLogger(TrainerServiceImpl trainerService, Logger logger) throws Exception {
-        Field loggerField = TrainerServiceImpl.class.getDeclaredField("logger");
-        loggerField.setAccessible(true);
-        loggerField.set(trainerService, logger);
-    }
 
     @Test
     void testSaveTrainer() {
         Trainer trainer = new Trainer();
+        trainer.setId(1);
         trainer.setFirstName("John");
         trainer.setLastName("Doe");
 
+        doNothing().when(trainerDAO).create(trainer);
         trainerService.saveTrainer(trainer);
 
         verify(trainerDAO, times(1)).create(trainer);
-        verify(logger, times(1)).info("Trainer John Doe");
     }
 
     @Test
-    void testUpdateTrainer() {
+    void testUpdateTrainer_ExistingTrainer() {
         Trainer trainer = new Trainer();
-        trainer.setFirstName("John");
+        trainer.setId(1);
+        trainer.setFirstName("Jane");
         trainer.setLastName("Doe");
+
+        when(trainerDAO.selectById(1)).thenReturn(trainer);
+        doNothing().when(trainerDAO).update(trainer);
 
         trainerService.updateTrainer(trainer);
 
         verify(trainerDAO, times(1)).update(trainer);
-        verify(logger, times(1)).info("Trainer John Doe");
     }
 
     @Test
-    void testGetTrainerById() {
+    void testUpdateTrainer_NonExistingTrainer() {
+        Trainer trainer = new Trainer();
+        trainer.setId(99);
+        trainer.setFirstName("Unknown");
+        trainer.setLastName("Person");
+
+        when(trainerDAO.selectById(99)).thenReturn(null);
+
+        trainerService.updateTrainer(trainer);
+
+        verify(trainerDAO, times(0)).update(trainer);
+        verify(trainerDAO, times(1)).selectById(99);
+    }
+
+
+    @Test
+    void testGetTrainerById_Found() {
         Trainer trainer = new Trainer();
         trainer.setId(1);
+        trainer.setFirstName("John");
+        trainer.setLastName("Doe");
+
         when(trainerDAO.selectById(1)).thenReturn(trainer);
 
         Trainer result = trainerService.getTrainerById(1);
 
-        Assertions.assertEquals(trainer, result);
-        verify(logger, times(1)).info("Get trainer by id " + 1);
+        assertNotNull(result);
+        assertEquals("John", result.getFirstName());
+        verify(trainerDAO, times(1)).selectById(1);
+    }
+
+    @Test
+    void testGetTrainerById_NotFound() {
+        when(trainerDAO.selectById(99)).thenReturn(null);
+
+        Trainer result = trainerService.getTrainerById(99);
+
+        assertNull(result);
+        verify(trainerDAO, times(1)).selectById(99);
     }
 }

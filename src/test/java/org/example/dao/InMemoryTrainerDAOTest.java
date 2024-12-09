@@ -1,6 +1,5 @@
 package org.example.dao;
 
-
 import org.example.dao.impl.InMemoryTrainerDAO;
 import org.example.model.Trainer;
 import org.junit.jupiter.api.BeforeEach;

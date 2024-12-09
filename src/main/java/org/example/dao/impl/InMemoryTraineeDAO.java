@@ -28,9 +28,9 @@ public class InMemoryTraineeDAO implements TraineeDAO {
         trainee.setUsername(username);
         trainee.setPassword(password);
         traineeMap.put(String.valueOf(trainee.getId()), trainee);
-        log.info("Created new trainee: {} {}, Username: {}, ID: {}",
+        log.info("Created new trainee: {} {} , ID: {}",
                 trainee.getFirstName(), trainee.getLastName(),
-                username, trainee.getId());
+                trainee.getId());
     }
 
     @Override
