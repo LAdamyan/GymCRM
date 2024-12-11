@@ -1,117 +1,48 @@
 package org.gymCrm;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.gymCrm.config.AppConfig;
-import org.gymCrm.model.*;
+import org.gymCrm.model.Trainee;
+import org.gymCrm.model.Trainer;
 import org.gymCrm.service.TraineeService;
-import org.gymCrm.service.TrainingService;
-import org.gymCrm.storage.InMemoryStorage;
-import org.gymCrm.util.UserCredentialsUtil;
+import org.gymCrm.service.TrainerService;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Slf4j
 public class Main {
+
     public static void main(String[] args) {
-        val context = new AnnotationConfigApplicationContext(AppConfig.class);
-        InMemoryStorage storage = context.getBean(InMemoryStorage.class);
-        storage.getTraineeMap().forEach((k, v) -> System.out.println(k + ": " + v));
-        storage.getTrainerMap().forEach((k, v) -> System.out.println(k + ": " + v));
-        storage.getTrainingMap().forEach((k, v) -> System.out.println(k + ": " + v));
-
-
+        ApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
         TraineeService traineeService = context.getBean(TraineeService.class);
+        TrainerService trainerService = context.getBean(TrainerService.class);
 
-        Trainee trainee = new Trainee(LocalDate.of(1990, 1, 1), new Address("City A"));
-        trainee.setId(1);
-        trainee.setFirstName("Lil");
-        trainee.setLastName("Adam");
-        traineeService.saveTrainee(trainee);
-        System.out.println("Trainee created:" + trainee);
+        Trainee trainee1 = new Trainee();
+        trainee1.setFirstName("Lilit");
+        trainee1.setLastName("Adamyan");
+        traineeService.saveTrainee(trainee1);
+        System.out.println("Trainee1 created :"+ trainee1);
 
-        trainee.setId(3);
-        trainee.setFirstName("UpdatedName ");
-        trainee.setPassword(UserCredentialsUtil.generatePassword());
-        trainee.setBirthDate(LocalDate.of(2024, 5, 6));
-        traineeService.updateTrainee(trainee);
-        System.out.println("Updated trainee:" + trainee);
+        Trainee trainee2 = new Trainee();
+        trainee2.setFirstName("Lilit");
+        trainee2.setLastName("Adamyan");
+        traineeService.saveTrainee(trainee2);
+        System.out.println("Trainee2 created :"+ trainee2);
 
-        Trainee retrievedTrainee = traineeService.getTraineeById(1);
-        retrievedTrainee.setId(2);
-        retrievedTrainee.setFirstName("Tom");
-        ;
-        retrievedTrainee.setPassword("588888");
-        traineeService.updateTrainee(retrievedTrainee);
-        if (retrievedTrainee != null) {
-            log.info("Retrieved Trainee: {}", retrievedTrainee);
-        } else {
-            log.warn("Trainee with ID {} not found.", trainee);
-        }
+        Trainer trainer = new Trainer();
+        trainer.setFirstName("Lilit");
+        trainer.setLastName("Adamyan");
+        trainerService.saveTrainer(trainer);
+        System.out.println("Trainer created :"+ trainer);
 
-        log.info("Updating Trainee with ID {}...", trainee.getId());
-        if (retrievedTrainee != null) {
-            retrievedTrainee.setLastName("UpdatedLastName");
-            traineeService.updateTrainee(retrievedTrainee);
-            log.info("Trainee updated: {}", retrievedTrainee);
-        }
+        traineeService.deleteTrainee(2);
+        System.out.println("Trainee2 is deleted");
 
-        int traineeId = 1;
-        traineeService.deleteTrainee(traineeId);
-        log.info("Trainee with ID {} deleted.", traineeId);
-
-        traineeService.getAllTrainees();
-        System.out.println("All trainees: " + traineeService.getAllTrainees());
-
-        Address address2 = new Address("123 Komitas");
-        Trainee trainee3 = new Trainee(
-                4,
-                "Alice",
-                "Wonderland",
-                UserCredentialsUtil.generateUsername("Alice", "Wonderland"),
-                UserCredentialsUtil.generatePassword(),
-                true,
-                LocalDate.of(1995, 3, 15),  // birthDate
-                address2
-        );
-        System.out.println("Trainee3  created:" + trainee3);
+        Trainee trainee3 = new Trainee();
+        trainee3.setFirstName("Lilit");
+        trainee3.setLastName("Adamyan");
         traineeService.saveTrainee(trainee3);
-
-        System.out.println("All trainees: " + traineeService.getAllTrainees());
-
-        TrainingService trainingService = context.getBean(TrainingService.class);
-
-        Trainee trainee4 = new Trainee(6,
-                "Aren",
-                "Black",
-                UserCredentialsUtil.generateUsername("Aren", "Black"),
-                UserCredentialsUtil.generatePassword(),
-                true,
-                LocalDate.of(1995, 3, 15),  // birthDate
-                address2);
-
-        Trainer trainer = new Trainer(3,
-                "Mara",
-                "White",
-                UserCredentialsUtil.generateUsername("Mara", "White"),
-                UserCredentialsUtil.generatePassword(),
-                true, "Aerobics");
-
-        Training training = new Training(trainee4, trainer,
-                "bodybuilding",
-                TrainingType.BODYBUILDING,
-                LocalDateTime.of(2023, 12, 15, 9, 30),
-                1.5);
-
-        trainingService.createTraining(training);
-        System.out.println("Training created: " + training);
-
-        trainingService.getTrainingByType(TrainingType.BODYBUILDING).forEach(System.out::println);
-
-        context.close();
-
-
+        System.out.println("Trainee3 created :"+ trainee3);
     }
+
 }

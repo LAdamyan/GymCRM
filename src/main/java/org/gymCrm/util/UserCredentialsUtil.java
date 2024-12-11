@@ -31,4 +31,9 @@ public class UserCredentialsUtil {
         log.debug("Generated random password.");
         return password;
     }
+
+    public static void clearUsernameCounts() {
+        usernameCounts.clear();
+
+    }
 }
