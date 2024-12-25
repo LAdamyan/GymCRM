@@ -20,9 +20,7 @@ public interface TraineeDAO {
 
     void changeTraineesPassword(String username, String password);
 
-    void activateTrainee(String username);
-
-    void deactivateTrainee(String username);
+    void changeTraineeActivation(String username,boolean activate);
 
     void updateTraineeTrainers(String traineeUsername, List<Trainer> trainers);
 

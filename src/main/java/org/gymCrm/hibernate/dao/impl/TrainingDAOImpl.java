@@ -6,6 +6,7 @@ import org.gymCrm.hibernate.model.Training;
 import org.gymCrm.hibernate.model.TrainingType;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +18,8 @@ import java.util.Optional;
 @Repository
 public class TrainingDAOImpl implements TrainingDAO {
 
+
+    @Autowired
     private SessionFactory sessionFactory;
 
     @Transactional
@@ -46,19 +49,25 @@ public class TrainingDAOImpl implements TrainingDAO {
             throw e;
         }
     }
-
+    @Transactional
     @Override
     public Optional<List<Training>> getTraineeTrainings(String username, Date fromDate, Date toDate, String trainerName, TrainingType trainingType) {
         Session session = sessionFactory.getCurrentSession();
-        String hql = "FROM Training t WHERE t.trainee.username = :username AND t.startDate >= :fromDate AND" +
-                " t.endDate <= :toDate AND t.trainer.name = :trainerName AND t.trainingType = :trainingType";
+        String hql =  "SELECT t FROM Training t " +
+                "JOIN t.trainees tr " +
+                "JOIN t.trainingType tt " +
+                "JOIN t.trainers tn " +
+                "WHERE tr.username = :username " +
+                "AND t.trainingDate BETWEEN :fromDate AND :toDate " +
+                "AND tt.typeName = :typeName " +
+                "AND tn.firstName = :trainerName";
         try{
             List<Training>trainings = session.createQuery(hql,Training.class)
                     .setParameter("username",username)
                     .setParameter("fromDate",fromDate)
                     .setParameter("toDate",toDate)
                     .setParameter("trainerName",trainerName)
-                    .setParameter("trainingType",trainingType)
+                    .setParameter("typeName",trainingType.getTypeName())
                     .getResultList();
             return Optional.ofNullable(trainings);
         }catch (Exception e) {
@@ -70,7 +79,12 @@ public class TrainingDAOImpl implements TrainingDAO {
     @Override
     public Optional<List<Training>> getTrainerTrainings(String username, Date fromDate, Date toDate, String traineeName) {
         Session session= sessionFactory.getCurrentSession();
-        String hql = "From Training t WHERE t.trainer.username = :username AND t.startDate >= :fromDate AND t.endDate <= :toDate AND t.trainee.name = :traineeName";
+        String hql = "SELECT t FROM Training t "+
+                    "JOIN t.trainers tr "+
+                    "JOIN t.trainees tn "+
+                    "WHERE tr.username = :username "+
+                    "AND t.trainingDate BETWEEN :fromDate AND:toDate"+
+                   " AND tn.firstName =:traineeName";
         try{
             List<Training> trainings = session.createQuery(hql,Training.class)
                     .setParameter("username",username)

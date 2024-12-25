@@ -1,5 +1,6 @@
 package org.gymCrm.hibernate.model;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -14,7 +15,10 @@ import static javax.persistence.CascadeType.ALL;
 @NoArgsConstructor
 @Entity
 @Table(name = "trainers")
+@DiscriminatorValue("TRAINER")
 public class Trainer extends User {
+
+    @NotNull(message = "Specialization cannot be null")
     @Column(name = "specialization")
     private String specialization;
 
@@ -26,12 +30,11 @@ public class Trainer extends User {
     )
     private Set<Trainee> trainees;
 
+    @NotNull(message = "Training cannot be null")
     @ManyToOne(cascade = ALL)
     @JoinColumn(name = "training_id")
     private Training training;
 
-    public Trainer(String trainer1) {
-    }
 }
 
 

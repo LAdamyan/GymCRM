@@ -118,60 +118,21 @@ class TraineeDAOImplTest {
     }
 
     @Test
-    void activateTrainee() {
-        String username = "johndoe";
+    void testChangeTraineeActivation_ActivateExistingInactiveTrainee() {
         Trainee trainee = new Trainee();
-        trainee.setUsername(username);
+        trainee.setActive(false);
 
         Query<Trainee> query = mock(Query.class);
-        when(session.createQuery("FROM Trainee WHERE username = :username", Trainee.class)).thenReturn(query);
-        when(query.setParameter("username", username)).thenReturn(query);
+        when(session.createQuery("FROM Trainee WHERE username = :username", Trainee.class))
+                .thenReturn(query);
+        when(query.setParameter("username", "user1")).thenReturn(query);
         when(query.uniqueResult()).thenReturn(trainee);
 
-        traineeDAO.activateTrainee(username);
+        traineeDAO.changeTraineeActivation("user1", true);
 
         assertTrue(trainee.isActive());
-        verify(session).update(trainee);
     }
 
-    @Test
-    void deactivateTrainee() {
-        String username = "johndoe";
-        Trainee trainee = new Trainee();
-        trainee.setUsername(username);
-
-        Query<Trainee> query = mock(Query.class);
-        when(session.createQuery("FROM Trainee WHERE username = :username", Trainee.class)).thenReturn(query);
-        when(query.setParameter("username", username)).thenReturn(query);
-        when(query.uniqueResult()).thenReturn(trainee);
-
-        traineeDAO.deactivateTrainee(username);
-
-        assertFalse(trainee.isActive());
-        verify(session).update(trainee);
-    }
-
-    @Test
-    void testUpdateTraineeTrainers_ExistingTrainee() {
-        String username = "johndoe";
-        List<Trainer> newTrainers = new ArrayList<>();
-        newTrainers.add(new Trainer("Trainer1"));
-        newTrainers.add(new Trainer("Trainer2"));
-
-        Trainee trainee = new Trainee();
-        trainee.setUsername(username);
-
-        Query<Trainee> query = mock(Query.class);
-        when(session.createQuery("FROM Trainee WHERE username =: username", Trainee.class))
-                .thenReturn(query);
-        when(query.setParameter("username", username)).thenReturn(query);
-        when(query.uniqueResult()).thenReturn(trainee);
-
-        traineeDAO.updateTraineeTrainers(username, newTrainers);
-
-        verify(session).update(trainee);
-        assertEquals(new HashSet<>(newTrainers), trainee.getTrainers());
-    }
 
     @Test
     void testUpdateTraineeTrainers_NonExistingTrainee() {

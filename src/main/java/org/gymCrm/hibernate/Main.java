@@ -3,76 +3,89 @@ package org.gymCrm.hibernate;
 import lombok.extern.slf4j.Slf4j;
 import org.gymCrm.hibernate.config.AppConfig;
 import org.gymCrm.hibernate.config.HibernateConfig;
-import org.gymCrm.hibernate.model.Trainee;
-import org.gymCrm.hibernate.model.Trainer;
+import org.gymCrm.hibernate.model.*;
 import org.gymCrm.hibernate.service.TraineeService;
 import org.gymCrm.hibernate.service.TrainerService;
-import org.springframework.context.ApplicationContext;
+import org.gymCrm.hibernate.service.TrainingService;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 import java.time.LocalDate;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 @Slf4j
 public class Main {
 
     public static void main(String[] args) {
 
-        ApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class, HibernateConfig.class);
-        TrainerService trainerService = context.getBean(TrainerService.class);
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class, HibernateConfig.class);
         TraineeService traineeService = context.getBean(TraineeService.class);
+        TrainerService trainerService = context.getBean(TrainerService.class);
+        TrainingService trainingService = context.getBean(TrainingService.class);
 
-        Trainee trainee1 = new Trainee();
-        trainee1.setFirstName("Lil");
-        trainee1.setLastName("Adamyan");
-        trainee1.setPassword(trainee1.getPassword());
-        trainee1.setUsername(trainee1.getUsername());
-        trainee1.setBirthDate(LocalDate.parse("2020-05-06"));
-        traineeService.saveTrainee(trainee1);
-        log.info("Saved trainee1: {}", trainee1);
+        Trainee trainee = new Trainee();
+        trainee.setFirstName("Tig");
+        trainee.setLastName("Adamyan");
+        trainee.setBirthDate(LocalDate.of(1980, 7, 24));
+        trainee.setAddress(new Address("New York", "Broadway", "25 ave", "55"));
+        trainee.setActive(true);
+        traineeService.saveTrainee(trainee);
+        System.out.println("Trainee saved successfully");
+
+        Trainer trainer = new Trainer();
+        trainer.setFirstName("John");
+        trainer.setLastName("Smith");
+        trainer.setUsername(trainer.getUsername());
+        trainer.setPassword(trainer.getPassword());
+        trainer.setActive(true);
+        trainer.setSpecialization("Fitness Coach");
+        trainerService.saveTrainer(trainer);
+        System.out.println("Trainer saved successfully");
 
         Trainee trainee2 = new Trainee();
-        trainee2.setFirstName("Lus");
+        trainee2.setFirstName("Lil");
         trainee2.setLastName("Adamyan");
-        trainee2.setPassword(trainee2.getPassword());
-        trainee2.setUsername(trainee2.getUsername());
-        trainee2.setBirthDate(LocalDate.parse("2024-01-01"));
+        trainee2.setBirthDate(LocalDate.of(1985, 7, 15));
+        trainee2.setAddress(new Address("Yerevan", "Abovyan", "50 ave", "7"));
+        trainee2.setActive(true);
         traineeService.saveTrainee(trainee2);
-        log.info("Saved trainee2: {}", trainee2);
+        System.out.println("Trainee2 saved successfully");
 
-        Trainee trainee3 = new Trainee();
-        trainee3.setFirstName("Lil");
-        trainee3.setLastName("Adamyan");
-        trainee3.setPassword(trainee3.getPassword());
-        trainee3.setUsername(trainee3.getUsername());
-        trainee3.setBirthDate(LocalDate.parse("2020-05-06"));
-        traineeService.saveTrainee(trainee3);
-        log.info("Saved trainee3: {}", trainee3);
+        TrainingType trainingType = new TrainingType();
+        trainingType.setTypeName("Bodybuilding");
 
-        Trainer trainer1 = new Trainer();
-        trainer1.setFirstName("John");
-        trainer1.setLastName("Doe");
-        trainer1.setUsername(trainer1.getUsername());
-        trainer1.setPassword(trainer1.getPassword());
-        trainer1.setSpecialization("Yoga");
-        trainerService.saveTrainer(trainer1);
-        log.info("Saved trainer: {}", trainer1);
+        Training training = new Training();
+        training.setTrainingName("Athletics");
+        training.setTrainingDate(new Date());
+        training.setDuration(90);
+        trainingService.createTraining(training, trainee.getUsername(), trainee.getPassword());
 
-        Trainer trainer2 = new Trainer();
-        trainer2.setFirstName("John");
-        trainer2.setLastName("Doe");
-        trainer2.setUsername(trainer1.getUsername());
-        trainer2.setPassword(trainer1.getPassword());
-        trainer2.setSpecialization("BodyBuilding");
-        trainerService.saveTrainer(trainer1);
-        log.info("Saved trainer: {}", trainer2);
+        training.setTrainees(Set.of(trainee));
+        training.setTrainers(Set.of(trainer));
 
-        Trainer trainer3 = new Trainer();
-        trainer3.setFirstName("John");
-        trainer3.setLastName("Doe");
-        trainer3.setUsername(trainer3.getUsername());
-        trainer3.setPassword(trainer3.getPassword());
-        trainer3.setSpecialization("BodyBuilding");
-        trainerService.saveTrainer(trainer3);
-        log.info("Saved trainer: {}", trainer3);
+        // Fetch trainee's trainings
+        Date fromDate = new Date();
+        Date toDate = new Date();
+        String trainerName = "Tom";
+
+        Optional<List<Training>> traineeTrainings = trainingService.getTraineeTrainings(
+                trainee.getUsername(), trainee.getPassword(), fromDate, toDate, trainerName, trainingType
+        );
+        traineeTrainings.ifPresentOrElse(
+                trainings -> trainings.forEach(t -> System.out.println("Trainee Training: " + t.getTrainingName())),
+                () -> System.out.println("No trainings found for the trainee.")
+        );
+
+        // Fetch trainee by username
+        Optional<Trainee> retrievedTrainee = traineeService.getTraineeByUsername(trainee.getUsername(), trainee.getPassword());
+        retrievedTrainee.ifPresent(t -> System.out.println("Retrieved trainee: " + t));
+
+        // Delete the trainee and observe cascade deletion
+
+        traineeService.deleteTrainee(trainee.getUsername(), trainee.getPassword());
+        System.out.println("Trainee and associated Training deleted!");
+
     }
-}
+    }

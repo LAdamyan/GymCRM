@@ -8,6 +8,7 @@ import org.gymCrm.hibernate.model.User;
 import org.gymCrm.hibernate.service.TrainingService;
 import org.gymCrm.hibernate.service.UserDetailsService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 import java.util.List;
@@ -42,7 +43,7 @@ public class TrainingServiceImpl implements TrainingService {
         }
         return trainingDAO.selectByType(type);
     }
-
+    @Transactional
     @Override
     public Optional<List<Training>> getTraineeTrainings(String username, String password, Date fromDate, Date toDate, String trainerName, TrainingType trainingType) {
         if (!userDetailsService.authenticate(username, password)) {

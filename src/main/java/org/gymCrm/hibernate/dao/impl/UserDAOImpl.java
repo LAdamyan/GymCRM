@@ -21,13 +21,14 @@ public class UserDAOImpl <T extends User>implements UserDAO <T>{
     @Transactional(readOnly = true)
     @Override
     public Optional<T> findByUsername(String username) {
-        try (Session session = sessionFactory.openSession()) {
+        try {Session session = sessionFactory.getCurrentSession();
             String hql = "FROM User WHERE username = :username";
             List<User> users = session.createQuery(hql, User.class)
                     .setParameter("username", username)
                     .setMaxResults(1)
                     .list();
-            return users.isEmpty() ? Optional.empty() : (Optional<T>) Optional.of(users.get(0));
+            log.debug("Query result for username '{}': {}", username, users);
+            return users.isEmpty() ? Optional.empty() : Optional.of((T) users.get(0));
         } catch (Exception e) {
             log.error("Error fetching user by username: {}", username, e);
             return Optional.empty();

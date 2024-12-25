@@ -1,5 +1,6 @@
 package org.gymCrm.hibernate.model;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import javax.persistence.*;
@@ -17,14 +18,21 @@ public class Training {
     @Column(name = "id")
     private int id;
 
-    @Column(name = "training_name")
+
+    @Column(name = "training_name", nullable = false)
     private String trainingName;
 
+    @NotNull(message = "Training type cannot be null")
+    @ManyToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "training_type_id")
+    private TrainingType trainingType;
+
+    @NotNull(message = "Training date cannot be null")
     @Column(name = "training_date")
     private Date trainingDate;
 
     @Column(name = "duration")
-    private double duration;
+    private int duration;
 
     @OneToMany(mappedBy = "training", cascade = CascadeType.ALL)
     private Set<Trainer> trainers;
@@ -32,7 +40,5 @@ public class Training {
     @OneToMany(mappedBy = "training", cascade = CascadeType.ALL)
     private Set<Trainee> trainees;
 
-    @OneToMany(mappedBy = "training", cascade = CascadeType.ALL)
-    private Set<TrainingType> types;
 
 }

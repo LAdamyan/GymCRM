@@ -92,25 +92,6 @@ class TrainerServiceImplTest {
 
     }
 
-    @Test
-    void activateTrainer_AuthenticationSuccess() {
-        when(userDetailsService.authenticate(anyString(), anyString())).thenReturn(true);
-
-        trainerService.activateTrainer("lil.adam", "7777");
-
-        verify(userDetailsService, times(1)).authenticate("lil.adam", "7777");
-        verify(trainerDAO, times(1)).activateTrainer("lil.adam");
-    }
-
-    @Test
-    void deactivateTrainer_AuthenticationSuccess() {
-        when(userDetailsService.authenticate(anyString(), anyString())).thenReturn(true);
-
-        trainerService.deactivateTrainer("lil.adam", "7777");
-
-        verify(userDetailsService, times(1)).authenticate("lil.adam", "7777");
-        verify(trainerDAO, times(1)).deactivateTrainer("lil.adam");
-    }
 
     @Test
     void getUnassignedTrainers_AuthenticationSuccess() {

@@ -13,7 +13,7 @@ class HibernateConfigTest {
 
     @Test
     public void testDataSourceBean() {
-        ApplicationContext context = new AnnotationConfigApplicationContext(HibernateConfig.class);
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(HibernateConfig.class);
         DriverManagerDataSource dataSource = context.getBean(DriverManagerDataSource.class);
 
         assertNotNull(dataSource, "DataSource should not be null");
@@ -23,7 +23,7 @@ class HibernateConfigTest {
 
     @Test
     public void testSessionFactoryBean() {
-        ApplicationContext context = new AnnotationConfigApplicationContext(HibernateConfig.class);
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(HibernateConfig.class);
         LocalSessionFactoryBean sessionFactory = context.getBean(LocalSessionFactoryBean.class);
 
         assertNotNull(sessionFactory, "SessionFactory should not be null");
@@ -31,7 +31,7 @@ class HibernateConfigTest {
 
     @Test
     public void testTransactionManagerBean() {
-        ApplicationContext context = new AnnotationConfigApplicationContext(HibernateConfig.class);
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(HibernateConfig.class);
         PlatformTransactionManager transactionManager = context.getBean(PlatformTransactionManager.class);
 
         assertNotNull(transactionManager, "Transaction Manager should not be null");

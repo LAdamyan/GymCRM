@@ -13,7 +13,7 @@ class AppConfigTest {
 
     @Test
     public void testAppConfig() {
-        ApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
 
         assertNotNull(context, "ApplicationContext should not be null");
 

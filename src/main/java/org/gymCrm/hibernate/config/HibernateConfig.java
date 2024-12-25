@@ -32,7 +32,7 @@ public class HibernateConfig {
     public LocalSessionFactoryBean sessionFactory() {
         LocalSessionFactoryBean sessionFactory = new LocalSessionFactoryBean();
         sessionFactory.setDataSource(dataSource());
-        sessionFactory.setPackagesToScan("org.gymCrm.hibernate");
+        sessionFactory.setPackagesToScan("org.gymCrm.hibernate.model");
         Properties hibernateProperties = new Properties();
         hibernateProperties.put("hibernate.dialect", "org.hibernate.dialect.MySQL5InnoDBDialect");
         hibernateProperties.put("hibernate.show_sql", true);

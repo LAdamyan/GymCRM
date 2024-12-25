@@ -13,10 +13,11 @@ public class UserDetailsServiceImpl <T extends User> implements UserDetailsServi
 
     private final UserDAO <T>userDAO;
 
+
     @Override
     public boolean authenticate(String username, String password) {
         return userDAO.findByUsername(username)
-                .map(user -> user.getPassword().equals(password))
+                .map(user ->user.getPassword().equals(password))
                 .orElse(false);
     }
 }

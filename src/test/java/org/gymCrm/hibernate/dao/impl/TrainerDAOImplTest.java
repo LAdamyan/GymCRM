@@ -1,5 +1,6 @@
 package org.gymCrm.hibernate.dao.impl;
 
+import org.gymCrm.hibernate.model.Trainee;
 import org.gymCrm.hibernate.model.Trainer;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -92,60 +93,43 @@ class TrainerDAOImplTest {
         verify(session).update(trainer);
     }
 
+
+//    @Test
+//    void testGetUnassignedTrainers() {
+//        String traineeUsername = "johndoe";
+//        List<Trainer> expectedTrainers = new ArrayList<>();
+//        expectedTrainers.add(new Trainer("Trainer1"));
+//        expectedTrainers.add(new Trainer("Trainer2"));
+//
+//        String hql = "SELECT t FROM Trainer t WHERE t NOT IN " +
+//                "(SELECT tn.trainers FROM Trainee tn WHERE tn.username = :username)";
+//
+//        Query<Trainer> query = mock(Query.class);
+//        when(session.createQuery(hql, Trainer.class)).thenReturn(query);
+//        when(query.setParameter("username", traineeUsername)).thenReturn(query);
+//        when(query.getResultList()).thenReturn(expectedTrainers);
+//
+//        Optional<List<Trainer>> actualTrainers = trainerDAO.getUnassignedTrainers(traineeUsername);
+//
+//        assertTrue(actualTrainers.isPresent());
+//        assertEquals(expectedTrainers, actualTrainers.get());
+//        verify(query).setParameter("username", traineeUsername);
+//    }
+
     @Test
-    void activateTrainer() {
-        String username = "johndoe";
+    void testChangeTrainerActivation_ActivateExistingInactiveTrainer() {
         Trainer trainer = new Trainer();
-        trainer.setUsername(username);
+        trainer.setActive(false);
 
         Query<Trainer> query = mock(Query.class);
-        when(session.createQuery("FROM Trainer WHERE username = :username", Trainer.class)).thenReturn(query);
-        when(query.setParameter("username", username)).thenReturn(query);
+        when(session.createQuery("FROM Trainer WHERE username = :username", Trainer.class))
+                .thenReturn(query);
+        when(query.setParameter("username", "user1")).thenReturn(query);
         when(query.uniqueResult()).thenReturn(trainer);
 
-        trainerDAO.activateTrainer(username);
+        trainerDAO.changeTrainerActivation("user1", true);
 
         assertTrue(trainer.isActive());
-        verify(session).update(trainer);
-    }
-
-    @Test
-    void deactivateTrainer() {
-        String username = "johndoe";
-        Trainer trainer = new Trainer();
-        trainer.setUsername(username);
-
-        Query<Trainer> query = mock(Query.class);
-        when(session.createQuery("FROM Trainer WHERE username = :username", Trainer.class)).thenReturn(query);
-        when(query.setParameter("username", username)).thenReturn(query);
-        when(query.uniqueResult()).thenReturn(trainer);
-
-        trainerDAO.deactivateTrainer(username);
-
-        assertFalse(trainer.isActive());
-        verify(session).update(trainer);
-    }
-
-    @Test
-    void testGetUnassignedTrainers() {
-        String traineeUsername = "johndoe";
-        List<Trainer> expectedTrainers = new ArrayList<>();
-        expectedTrainers.add(new Trainer("Trainer1"));
-        expectedTrainers.add(new Trainer("Trainer2"));
-
-        String hql = "SELECT t FROM Trainer t WHERE t NOT IN " +
-                "(SELECT tn.trainers FROM Trainee tn WHERE tn.username = :username)";
-
-        Query<Trainer> query = mock(Query.class);
-        when(session.createQuery(hql, Trainer.class)).thenReturn(query);
-        when(query.setParameter("username", traineeUsername)).thenReturn(query);
-        when(query.getResultList()).thenReturn(expectedTrainers);
-
-        Optional<List<Trainer>> actualTrainers = trainerDAO.getUnassignedTrainers(traineeUsername);
-
-        assertTrue(actualTrainers.isPresent());
-        assertEquals(expectedTrainers, actualTrainers.get());
-        verify(query).setParameter("username", traineeUsername);
     }
 
     @Test

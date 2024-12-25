@@ -3,7 +3,6 @@ package org.gymCrm.hibernate.service.impl;
 import org.gymCrm.hibernate.dao.TrainingDAO;
 import org.gymCrm.hibernate.model.Training;
 import org.gymCrm.hibernate.model.TrainingType;
-import org.gymCrm.hibernate.model.Type;
 import org.gymCrm.hibernate.service.UserDetailsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -67,15 +66,13 @@ class TrainingServiceImplTest {
     void getTrainingByType_Success() {
         TrainingType trainingTypeEntity = new TrainingType();
         trainingTypeEntity.setId(1);
-        trainingTypeEntity.setType(Type.BODYBUILDING);
+        trainingTypeEntity.setTypeName("BODYBUILDING");
 
-        Set<TrainingType> trainingTypes = new HashSet<>();
-        trainingTypes.add(trainingTypeEntity);
 
         Training mockTraining = new Training();
         mockTraining.setId(1);
         mockTraining.setTrainingName("Strength Training");
-        mockTraining.setTypes(trainingTypes);
+        mockTraining.setTrainingType(trainingTypeEntity);
 
         List<Training> trainings = Arrays.asList(mockTraining);
 
@@ -87,7 +84,7 @@ class TrainingServiceImplTest {
         assertTrue(result.isPresent(), "Trainings should be present");
         assertEquals(1, result.get().size(), "There should be one training");
         assertEquals("Strength Training", result.get().get(0).getTrainingName(), "Training name should match");
-        assertEquals(Type.BODYBUILDING, result.get().get(0).getTypes().iterator().next().getType(), "Training type should match");
+        assertEquals("BODYBUILDING", result.get().get(0).getTrainingType().getTypeName(), "Training type should match");
 
         verify(userDetailsService, times(1)).authenticate(username, password);
         verify(trainingDAO, times(1)).selectByType(trainingTypeEntity);
@@ -100,7 +97,7 @@ class TrainingServiceImplTest {
         String trainerName = "trainer1";
 
         TrainingType trainingType = new TrainingType();
-        trainingType.setType(Type.BODYBUILDING);
+        trainingType.setTypeName("BODYBUILDING");
 
         List<Training> trainings = Arrays.asList(mockTraining);
 

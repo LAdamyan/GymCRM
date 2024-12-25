@@ -67,22 +67,15 @@ public class TrainerServiceImpl implements TrainerService {
     }
 
     @Override
-    public void activateTrainer(String username, String password) {
-       if(!userDetailsService.authenticate(username,password)){
-           throw new SecurityException("User " + username + " not authenticated, permission denied!");
-       }
-       trainerDAO.activateTrainer(username);
-       log.info("Trainee {} activated",username);
-    }
-
-    @Override
-    public void deactivateTrainer(String username, String password) {
+    public void changeTrainerActivation(String username, String password,boolean activate) {
         if(!userDetailsService.authenticate(username,password)){
             throw new SecurityException("User " + username + " not authenticated, permission denied!");
         }
-        trainerDAO.deactivateTrainer(username);
-        log.info("Trainee {} deactivated",username);
+        trainerDAO.changeTrainerActivation(username,activate);
+        String action = activate ? "activated" : "deactivated";
+        log.info("Trainee {} successfully {}",username,action);
     }
+
 
     @Override
     public Optional<List<Trainer>> getUnassignedTrainers(String username, String password, String traineeUsername) {

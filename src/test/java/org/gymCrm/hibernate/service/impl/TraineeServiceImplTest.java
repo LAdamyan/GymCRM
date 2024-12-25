@@ -119,25 +119,32 @@ class TraineeServiceImplTest {
         verify(traineeDAO, times(1)).changeTraineesPassword("lil.adam","newPassword");
 
     }
-
     @Test
-    void activateTrainee_AuthenticationSuccess() {
-        when(userDetailsService.authenticate(anyString(), anyString())).thenReturn(true);
+    void testChangeTraineeActivation_SuccessfulAuthenticationActivatesTrainee() {
+        String username = "testUser";
+        String password = "testPass";
+        boolean activate = true;
 
-        traineeService.activateTrainee("lil.adam", "7777");
+        when(userDetailsService.authenticate(username, password)).thenReturn(true);
 
-        verify(userDetailsService, times(1)).authenticate("lil.adam", "7777");
-        verify(traineeDAO, times(1)).activateTrainee("lil.adam");
+        traineeService.changeTraineeActivation(username, password, activate);
+
+        verify(traineeDAO, times(1)).changeTraineeActivation(username, activate);
+
     }
-
     @Test
-    void deactivateTrainee_AuthenticationSuccess() {
-        when(userDetailsService.authenticate(anyString(), anyString())).thenReturn(true);
+    void testChangeTraineeActivation_FailedAuthenticationThrowsException() {
+        String username = "testUser";
+        String password = "testPass";
+        boolean activate = true;
 
-        traineeService.deactivateTrainee("lil.adam", "7777");
+        when(userDetailsService.authenticate(username, password)).thenReturn(false);
 
-        verify(userDetailsService, times(1)).authenticate("lil.adam", "7777");
-        verify(traineeDAO, times(1)).deactivateTrainee("lil.adam");
+        Exception exception = assertThrows(SecurityException.class, () -> {
+            traineeService.changeTraineeActivation(username, password, activate);
+        });
+
+        assertEquals("User testUser not authenticated, permission denied!", exception.getMessage());
+        verify(traineeDAO, never()).changeTraineeActivation(username, activate);
     }
-
 }

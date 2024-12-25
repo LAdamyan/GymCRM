@@ -27,9 +27,10 @@ public class TraineeServiceImpl implements TraineeService {
 
     @Transactional
     @Override
-    public void saveTrainee(Trainee trainee) {
+    public String saveTrainee(Trainee trainee) {
         traineeDAO.create(trainee);
         log.info("Created new trainee with username: {}", trainee.getUsername());
+        return trainee.getPassword();
     }
 
     @Transactional(readOnly = true)
@@ -85,20 +86,14 @@ public class TraineeServiceImpl implements TraineeService {
     }
 
     @Override
-    public void activateTrainee(String username, String password) {
+    public void changeTraineeActivation(String username, String password,boolean activate) {
         if (!userDetailsService.authenticate(username, password)) {
             throw new SecurityException("User " + username + " not authenticated, permission denied!");
         }
-        traineeDAO.activateTrainee(username);
-        log.info("Trainee {} activated" ,username);
+        traineeDAO.changeTraineeActivation(username,activate);
+        String action = activate ? "activated" : "deactivated";
+        log.info("Trainee {} successfully {}", username, action);
     }
 
-    @Override
-    public void deactivateTrainee(String username, String password) {
-        if (!userDetailsService.authenticate(username, password)) {
-            throw new SecurityException("User " + username + " not authenticated, permission denied!");
-        }
-        traineeDAO.deactivateTrainee(username);
-        log.info("Trainee {} deactivated" ,username);
-    }
+
 }
