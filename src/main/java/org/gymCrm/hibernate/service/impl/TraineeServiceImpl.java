@@ -86,14 +86,23 @@ public class TraineeServiceImpl implements TraineeService {
     }
 
     @Override
-    public void changeTraineeActivation(String username, String password,boolean activate) {
+    public void changeTraineeActiveStatus(String username, String password) {
         if (!userDetailsService.authenticate(username, password)) {
             throw new SecurityException("User " + username + " not authenticated, permission denied!");
         }
-        traineeDAO.changeTraineeActivation(username,activate);
-        String action = activate ? "activated" : "deactivated";
-        log.info("Trainee {} successfully {}", username, action);
+        Optional<Trainee> optionalTrainee = traineeDAO.selectByUsername(username);
+
+       if(optionalTrainee.isPresent()){
+           Trainee trainee = optionalTrainee.get();
+           traineeDAO.changeTraineeActiveStatus(username);
+
+           String action = trainee.isActive() ? "deactivated" : "activated";
+           log.info("Trainee {} successfully {}", username, action);
+       } else {
+           log.warn("Trainee not found for username: {}", username);
+       }
+       }
     }
 
 
-}
+

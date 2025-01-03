@@ -87,5 +87,17 @@ public class Main {
         traineeService.deleteTrainee(trainee.getUsername(), trainee.getPassword());
         System.out.println("Trainee and associated Training deleted!");
 
+        // Try to change the active status of the trainee
+        System.out.println("Attempting to change the active status for user " + trainee2.getUsername());
+    try{
+        traineeService.changeTraineeActiveStatus(trainee2.getUsername(), trainee2.getPassword());
+        System.out.println("Active status changed successfully for " + trainee2.getUsername());
+    } catch (SecurityException se) {
+        System.err.println("Authentication failed: " + se.getMessage());
+    } catch (Exception e) {
+        System.err.println("An error occurred: " + e.getMessage());
+    } finally {
+        context.close();
     }
     }
+}

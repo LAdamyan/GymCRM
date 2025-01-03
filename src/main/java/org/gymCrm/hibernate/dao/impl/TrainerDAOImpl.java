@@ -100,15 +100,19 @@ public class TrainerDAOImpl implements TrainerDAO {
     }
 
     @Override
-    public void changeTrainerActivation(String username,boolean activate) {
+    public void changeTrainerActiveStatus(String username) {
         Session session = sessionFactory.getCurrentSession();
         try {
             Trainer trainer = session.createQuery("FROM Trainer WHERE username = :username", Trainer.class)
                     .setParameter("username", username)
                     .uniqueResult();
-            if (trainer != null && trainer.isActive() != activate) {
-                trainer.setActive(activate);
+            if (trainer != null) {
+                boolean newStatus = !trainer.isActive();
+                trainer.setActive(newStatus);
                 session.update(trainer);
+                log.info("Trainer status updated: {} is now {}", username, newStatus ? "Active" : "Inactive");
+            } else {
+                log.warn("Trainer not found for username: " + username);
             }
         } catch (Exception e) {
             log.error("Error while updating active status of trainer", e);

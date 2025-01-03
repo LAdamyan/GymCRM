@@ -13,6 +13,6 @@ public interface TraineeService {
     void updateTrainee(Trainee trainee,String username, String password);
     void deleteTrainee(String username, String password);
     void changeTraineesPassword(String username,String oldPassword,String newPassword);
-    void changeTraineeActivation(String username, String password,boolean activate);
+    void changeTraineeActiveStatus(String username, String password);
 
 }

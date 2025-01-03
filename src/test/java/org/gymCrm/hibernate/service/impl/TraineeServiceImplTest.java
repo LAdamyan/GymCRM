@@ -120,31 +120,33 @@ class TraineeServiceImplTest {
 
     }
     @Test
-    void testChangeTraineeActivation_SuccessfulAuthenticationActivatesTrainee() {
+    public void testChangeTraineeActiveStatus_TraineeFound_ShouldToggleStatus() {
         String username = "testUser";
         String password = "testPass";
-        boolean activate = true;
+        Trainee trainee = new Trainee();
+        trainee.setActive(true);
 
         when(userDetailsService.authenticate(username, password)).thenReturn(true);
+        when(traineeDAO.selectByUsername(username)).thenReturn(Optional.of(trainee));
 
-        traineeService.changeTraineeActivation(username, password, activate);
+        traineeService.changeTraineeActiveStatus(username, password);
 
-        verify(traineeDAO, times(1)).changeTraineeActivation(username, activate);
+        assertEquals(true, trainee.isActive());
+        verify(traineeDAO, times(1)).changeTraineeActiveStatus(username);
 
     }
     @Test
     void testChangeTraineeActivation_FailedAuthenticationThrowsException() {
         String username = "testUser";
         String password = "testPass";
-        boolean activate = true;
 
         when(userDetailsService.authenticate(username, password)).thenReturn(false);
 
         Exception exception = assertThrows(SecurityException.class, () -> {
-            traineeService.changeTraineeActivation(username, password, activate);
+            traineeService.changeTraineeActiveStatus(username, password);
         });
 
         assertEquals("User testUser not authenticated, permission denied!", exception.getMessage());
-        verify(traineeDAO, never()).changeTraineeActivation(username, activate);
+        verify(traineeDAO, never()).changeTraineeActiveStatus(username);
     }
 }

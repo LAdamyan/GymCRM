@@ -59,23 +59,29 @@ public class TrainerServiceImpl implements TrainerService {
 
     @Override
     public void changeTrainersPassword(String username, String oldPassword, String newPassword) {
-        if(!userDetailsService.authenticate(username,oldPassword)){
+        if (!userDetailsService.authenticate(username, oldPassword)) {
             throw new SecurityException("Invalid username or password");
         }
-        trainerDAO.changeTrainersPassword(username,newPassword);
-        log.info("Trainer's {} password changed",username);
+        trainerDAO.changeTrainersPassword(username, newPassword);
+        log.info("Trainer's {} password changed", username);
     }
 
     @Override
-    public void changeTrainerActivation(String username, String password,boolean activate) {
-        if(!userDetailsService.authenticate(username,password)){
+    public void changeTrainerActiveStatus(String username, String password) {
+        if (!userDetailsService.authenticate(username, password)) {
             throw new SecurityException("User " + username + " not authenticated, permission denied!");
         }
-        trainerDAO.changeTrainerActivation(username,activate);
-        String action = activate ? "activated" : "deactivated";
-        log.info("Trainee {} successfully {}",username,action);
-    }
+        Optional<Trainer> optionalTrainer = trainerDAO.selectByUsername(username);
+        if (optionalTrainer.isPresent()) {
+            Trainer trainer = optionalTrainer.get();
+            trainerDAO.changeTrainerActiveStatus(username);
 
+            String action = trainer.isActive() ? "activated" : "deactivated";
+            log.info("Trainer {} successfully {} ", username, action);
+        } else {
+            log.warn("Trainer not found for username: {}", username);
+        }
+    }
 
     @Override
     public Optional<List<Trainer>> getUnassignedTrainers(String username, String password, String traineeUsername) {

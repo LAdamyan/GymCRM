@@ -10,6 +10,6 @@ public interface TrainerService {
     void updateTrainer(Trainer trainer, String username, String password);
     Optional<Trainer> getTrainerByUsername(String username, String password);
     void changeTrainersPassword(String username,String oldPassword, String newPassword);
-    void changeTrainerActivation(String username, String password,boolean activate);
+    void changeTrainerActiveStatus(String username, String password);
     Optional <List<Trainer>>getUnassignedTrainers(String username, String password,String TraineeUsername);
 }

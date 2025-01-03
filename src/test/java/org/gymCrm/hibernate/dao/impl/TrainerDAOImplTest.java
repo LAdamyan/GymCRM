@@ -117,19 +117,36 @@ class TrainerDAOImplTest {
 //    }
 
     @Test
-    void testChangeTrainerActivation_ActivateExistingInactiveTrainer() {
-        Trainer trainer = new Trainer();
-        trainer.setActive(false);
+    void testChangeTrainerActiveStatus_WhenTraineeFound_ShouldToggleStatus() {
+        {
+            Trainer trainer = new Trainer();
+            trainer.setUsername("testTrainer");
+            trainer.setActive(true);
+
+            Query<Trainer> query = mock(Query.class);
+            when(session.createQuery("FROM Trainer WHERE username = :username", Trainer.class))
+                    .thenReturn(query);
+            when(query.setParameter("username", "testTrainer")).thenReturn(query);
+            when(query.uniqueResult()).thenReturn(trainer);
+
+            trainerDAO.changeTrainerActiveStatus("testTrainer");
+
+            assertFalse(trainer.isActive(), "Trainer should be activated");
+            verify(session).update(trainer);
+        }
+    }
+    @Test
+    void changeTrainerActiveStatus_WhenTrainerNotFound_ShouldNotChangeStatus() {
 
         Query<Trainer> query = mock(Query.class);
-        when(session.createQuery("FROM Trainer WHERE username = :username", Trainer.class))
-                .thenReturn(query);
-        when(query.setParameter("username", "user1")).thenReturn(query);
-        when(query.uniqueResult()).thenReturn(trainer);
+        when(sessionFactory.getCurrentSession()).thenReturn(session);
+        when(session.createQuery("FROM Trainer WHERE username = :username", Trainer.class)).thenReturn(query);
+        when(query.setParameter("username", "unknownUser")).thenReturn(query);
+        when(query.uniqueResult()).thenReturn(null);
 
-        trainerDAO.changeTrainerActivation("user1", true);
+        trainerDAO.changeTrainerActiveStatus("unknownUser");
 
-        assertTrue(trainer.isActive());
+        verify(session, never()).update(any(Trainer.class));
     }
 
     @Test

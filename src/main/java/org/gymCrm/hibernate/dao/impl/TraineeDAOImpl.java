@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.gymCrm.hibernate.dao.TraineeDAO;
 import org.gymCrm.hibernate.model.Trainee;
 import org.gymCrm.hibernate.model.Trainer;
-import org.gymCrm.hibernate.service.UserDetailsService;
 import org.gymCrm.hibernate.util.UserCredentialsUtil;
 import org.hibernate.NonUniqueResultException;
 import org.hibernate.Session;
@@ -31,7 +30,7 @@ public class TraineeDAOImpl implements TraineeDAO {
         Session session = sessionFactory.getCurrentSession();
         try {
             String username = UserCredentialsUtil.generateUsername(trainee.getFirstName(), trainee.getLastName());
-            List<Trainee> existingTrainees  = session.createQuery("FROM Trainee WHERE username = :username", Trainee.class)
+            List<Trainee> existingTrainees = session.createQuery("FROM Trainee WHERE username = :username", Trainee.class)
                     .setParameter("username", username)
                     .list();
             if (!existingTrainees.isEmpty()) {
@@ -43,10 +42,10 @@ public class TraineeDAOImpl implements TraineeDAO {
                 String newPassword = UserCredentialsUtil.generatePassword();
                 trainee.setPassword(newPassword);
                 trainee.setUsername(username);
-                log.info("Generated new username '{}' and password for the trainee.",username);
+                log.info("Generated new username '{}' and password for the trainee.", username);
             }
             session.save(trainee);
-            log.info("Trainee saved successfully with username: {}",username);
+            log.info("Trainee saved successfully with username: {}", username);
         } catch (Exception e) {
             log.error("Error while creating trainee", e);
             throw e;
@@ -129,15 +128,19 @@ public class TraineeDAOImpl implements TraineeDAO {
 
     @Transactional
     @Override
-    public void changeTraineeActivation(String username,boolean activate) {
+    public void changeTraineeActiveStatus(String username) {
         Session session = sessionFactory.getCurrentSession();
         try {
             Trainee trainee = session.createQuery("FROM Trainee WHERE username = :username", Trainee.class)
                     .setParameter("username", username)
                     .uniqueResult();
-            if (trainee != null && trainee.isActive() != activate) {
-                    trainee.setActive(activate);
-                    session.update(trainee);
+            if (trainee != null) {
+                boolean newStatus = !trainee.isActive();
+                trainee.setActive(newStatus);
+                session.update(trainee);
+                log.info("Trainee status updated: {} is now {}", username, newStatus ? "Active" : "Inactive");
+            } else {
+                log.warn("Trainee not found for username: " + username);
             }
         } catch (Exception e) {
             log.error("Error while updating active status of trainee", e);

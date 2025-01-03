@@ -14,7 +14,7 @@ public interface TrainerDAO {
 
     void changeTrainersPassword(String username, String password);
 
-    void changeTrainerActivation(String username,boolean activate);
+    void changeTrainerActiveStatus(String username);
 
     Optional<List<Trainer>> getUnassignedTrainers(String traineeUsername);
 }

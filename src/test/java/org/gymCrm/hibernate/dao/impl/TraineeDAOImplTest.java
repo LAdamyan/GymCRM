@@ -118,19 +118,34 @@ class TraineeDAOImplTest {
     }
 
     @Test
-    void testChangeTraineeActivation_ActivateExistingInactiveTrainee() {
+    void changeTraineeActiveStatus_WhenTraineeFound_ShouldToggleStatus() {
         Trainee trainee = new Trainee();
-        trainee.setActive(false);
+        trainee.setUsername("testTrainee");
+        trainee.setActive(true);
 
         Query<Trainee> query = mock(Query.class);
-        when(session.createQuery("FROM Trainee WHERE username = :username", Trainee.class))
-                .thenReturn(query);
-        when(query.setParameter("username", "user1")).thenReturn(query);
+        when(sessionFactory.getCurrentSession()).thenReturn(session);
+        when(session.createQuery("FROM Trainee WHERE username = :username", Trainee.class)).thenReturn(query);
+        when(query.setParameter("username", "testTrainee")).thenReturn(query);
         when(query.uniqueResult()).thenReturn(trainee);
 
-        traineeDAO.changeTraineeActivation("user1", true);
+        traineeDAO.changeTraineeActiveStatus("testTrainee");
 
-        assertTrue(trainee.isActive());
+        assertFalse(trainee.isActive(), "Trainee should be deactivated.");
+        verify(session).update(trainee);
+    }
+    @Test
+    void changeTraineeActiveStatus_WhenTraineeNotFound_ShouldNotChangeStatus() {
+
+        Query<Trainee> query = mock(Query.class);
+        when(sessionFactory.getCurrentSession()).thenReturn(session);
+        when(session.createQuery("FROM Trainee WHERE username = :username", Trainee.class)).thenReturn(query);
+        when(query.setParameter("username", "unknownUser")).thenReturn(query);
+        when(query.uniqueResult()).thenReturn(null);
+
+        traineeDAO.changeTraineeActiveStatus("unknownUser");
+
+        verify(session, never()).update(any(Trainee.class));
     }
 
 
