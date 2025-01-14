@@ -7,12 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
-
 import java.util.ArrayList;
 import java.util.List;
-
-import static javax.persistence.CascadeType.ALL;
-import static javax.persistence.EnumType.STRING;
 
 @Entity
 @Data
@@ -32,5 +28,7 @@ public class TrainingType {
     @OneToMany(mappedBy = "trainingType", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Training> trainings = new ArrayList<>();
 
-
+    public TrainingType(String typeName) {
+        this.typeName = typeName;
+    }
 }

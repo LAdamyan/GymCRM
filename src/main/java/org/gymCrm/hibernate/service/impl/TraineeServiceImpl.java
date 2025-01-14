@@ -45,6 +45,11 @@ public class TraineeServiceImpl implements TraineeService {
         }
     }
 
+    @Override
+    public Optional<List<Trainee>> getAllTrainees() {
+        return traineeDAO.listAll();
+    }
+
     @Transactional
     @Override
     public Optional<Trainee> getTraineeByUsername(String username, String password) {
@@ -54,6 +59,12 @@ public class TraineeServiceImpl implements TraineeService {
         log.info("Fetching trainee by username: {}", username);
         return traineeDAO.selectByUsername(username);
 
+    }
+    @Transactional(readOnly = true)
+    @Override
+    public Optional<Trainee> getTraineeByUsername(String username) {
+        log.info("Fetching trainee by username without authentication: {}", username);
+        return traineeDAO.selectByUsername(username);
     }
 
     @Transactional
@@ -75,6 +86,13 @@ public class TraineeServiceImpl implements TraineeService {
         traineeDAO.delete(username);
         log.info("Deleted trainee with username: {}", username);
     }
+    @Transactional
+    @Override
+    public void deleteTrainee(String username) {
+        traineeDAO.delete(username);
+        log.info("Deleted trainee with username: {}", username);
+    }
+
 
     @Override
     public void changeTraineesPassword(String username, String oldPassword, String newPassword) {
@@ -102,7 +120,25 @@ public class TraineeServiceImpl implements TraineeService {
            log.warn("Trainee not found for username: {}", username);
        }
        }
+
+    @Override
+    public void changeTraineeActiveStatus(String username, String password, boolean isActive) {
+        if (!userDetailsService.authenticate(username, password)) {
+            throw new SecurityException("User " + username + " not authenticated, permission denied!");
+        }
+        Optional<Trainee> optionalTrainee = traineeDAO.selectByUsername(username);
+        if(optionalTrainee.isPresent()){
+            Trainee trainee = optionalTrainee.get();
+            trainee.setActive(isActive);
+            traineeDAO.update(trainee);  // Make sure DAO supports updating a Trainee
+
+            String action = isActive ? "activated" : "deactivated";
+            log.info("Trainee {} successfully {}", username, action);
+        } else {
+            log.warn("Trainee not found for username: {}", username);
+        }
     }
+}
 
 
 

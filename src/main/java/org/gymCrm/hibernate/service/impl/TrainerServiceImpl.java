@@ -2,6 +2,7 @@ package org.gymCrm.hibernate.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import org.gymCrm.hibernate.dao.TrainerDAO;
+import org.gymCrm.hibernate.dto.UpdateTrainerDTO;
 import org.gymCrm.hibernate.model.Trainer;
 import org.gymCrm.hibernate.service.TrainerService;
 import org.gymCrm.hibernate.service.UserDetailsService;
@@ -47,6 +48,25 @@ public class TrainerServiceImpl implements TrainerService {
         log.info("Updated trainer with username: {}", username);
     }
 
+    @Override
+    public Optional<Trainer> updateTrainer(String username, UpdateTrainerDTO updateDTO) {
+        Optional<Trainer> trainerOpt = trainerDAO.selectByUsername(username);
+        if (trainerOpt.isPresent()) {
+            Trainer trainer = trainerOpt.get();
+            trainer.setFirstName(updateDTO.getFirstName());
+            trainer.setLastName(updateDTO.getLastName());
+            trainerDAO.create(trainer);
+            return Optional.of(trainer);
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public void updateTrainer(Trainer trainer, String username) {
+        trainerDAO.update(trainer);
+        log.info("Updated trainer with username: {}", username);
+    }
+
     @Transactional(readOnly = true)
     @Override
     public Optional<Trainer> getTrainerByUsername(String username, String password) {
@@ -54,6 +74,13 @@ public class TrainerServiceImpl implements TrainerService {
         if (!userDetailsService.authenticate(username, password)) {
             throw new SecurityException("Invalid username or password");
         }
+        return trainerDAO.selectByUsername(username);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public Optional<Trainer> getTrainerByUsername(String username) {
+        log.info("Fetching trainer by ID: {}", username);
         return trainerDAO.selectByUsername(username);
     }
 
@@ -75,6 +102,23 @@ public class TrainerServiceImpl implements TrainerService {
         if (optionalTrainer.isPresent()) {
             Trainer trainer = optionalTrainer.get();
             trainerDAO.changeTrainerActiveStatus(username);
+
+            String action = trainer.isActive() ? "activated" : "deactivated";
+            log.info("Trainer {} successfully {} ", username, action);
+        } else {
+            log.warn("Trainer not found for username: {}", username);
+        }
+    }
+    @Override
+    public void changeTrainerActiveStatus(String username, String password,boolean isActive) {
+        if (!userDetailsService.authenticate(username, password)) {
+            throw new SecurityException("User " + username + " not authenticated, permission denied!");
+        }
+        Optional<Trainer> optionalTrainer = trainerDAO.selectByUsername(username);
+        if (optionalTrainer.isPresent()) {
+            Trainer trainer = optionalTrainer.get();
+            trainer.setActive(isActive);
+            trainerDAO.update(trainer);
 
             String action = trainer.isActive() ? "activated" : "deactivated";
             log.info("Trainer {} successfully {} ", username, action);

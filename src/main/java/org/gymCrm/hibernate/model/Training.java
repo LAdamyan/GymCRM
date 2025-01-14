@@ -2,6 +2,7 @@ package org.gymCrm.hibernate.model;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
 import java.util.Date;
@@ -10,6 +11,7 @@ import java.util.Set;
 import static javax.persistence.GenerationType.IDENTITY;
 @Data
 @Entity
+@NoArgsConstructor
 @Table(name = "trainings")
 public class Training {
 
@@ -41,4 +43,9 @@ public class Training {
     private Set<Trainee> trainees;
 
 
+    public Training(String trainingName, Date trainingDate, int duration) {
+        this.trainingName = trainingName;
+        this.trainingDate = trainingDate;
+        this.duration = duration;
+    }
 }

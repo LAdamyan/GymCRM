@@ -16,4 +16,6 @@ public interface TrainingDAO {
     Optional<List<Training>> getTraineeTrainings(String username, Date fromDate, Date toDate, String trainerName, TrainingType trainingType);
 
     Optional<List<Training>> getTrainerTrainings(String username, Date fromDate, Date toDate, String traineeName);
+
+    List<String> getDistinctTrainingTypes();
 }

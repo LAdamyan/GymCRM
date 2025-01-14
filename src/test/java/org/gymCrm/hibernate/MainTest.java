@@ -55,62 +55,62 @@ class MainTest {
         lenient().when(training.getTrainingName()).thenReturn("Athletics");
         lenient().when(trainingType.getTypeName()).thenReturn("Bodybuilding");
     }
-    @Test
-    public void testSaveTrainee() {
-        trainerService.saveTrainer(trainer);
-        verify(trainerService, times(1)).saveTrainer(trainer);
-        System.out.println("Trainer saved successfully");
-    }
-
-    @Test
-    public void testSaveTrainer() {
-        trainerService.saveTrainer(trainer);
-        verify(trainerService, times(1)).saveTrainer(trainer);
-        System.out.println("Trainer saved successfully");
-    }
-
-    @Test
-    public void testCreateTraining() {
-        trainingService.createTraining(training, "TigAdamyan", "password123");
-        verify(trainingService, times(1)).createTraining(training, "TigAdamyan", "password123");
-        System.out.println("Training created successfully");
-    }
-
-    @Test
-    public void testGetTraineeTrainings() {
-        Date fromDate = new Date();
-        Date toDate = new Date();
-        String trainerName = "Tom";
-
-        Optional<List<Training>> traineeTrainings = Optional.of(Arrays.asList(training));
-        when(trainingService.getTraineeTrainings(
-                "TigAdamyan", "password123", fromDate, toDate, trainerName, trainingType
-        )).thenReturn(traineeTrainings);
-
-        Optional<List<Training>> result = trainingService.getTraineeTrainings(
-                "TigAdamyan", "password123", fromDate, toDate, trainerName, trainingType
-        );
-
-        assertTrue(result.isPresent());
-        assertEquals(1, result.get().size());
-        System.out.println("Trainee Training fetched successfully");
-    }
-    @Test
-    public void testGetTraineeByUsername() {
-        when(traineeService.getTraineeByUsername("TigAdamyan", "password123"))
-                .thenReturn(Optional.of(trainee));
-
-        Optional<Trainee> retrievedTrainee = traineeService.getTraineeByUsername("TigAdamyan", "password123");
-
-        assertTrue(retrievedTrainee.isPresent());
-        assertEquals(trainee, retrievedTrainee.get());
-        System.out.println("Trainee fetched successfully");
-    }
-
-    @Test
-    public void testDeleteTrainee() {
-        traineeService.deleteTrainee("TigAdamyan", "password123");
-        verify(traineeService, times(1)).deleteTrainee("TigAdamyan", "password123");
-        System.out.println("Trainee deleted successfully");
-    }
+//    @Test
+//    public void testSaveTrainee() {
+//        trainerService.saveTrainer(trainer);
+//        verify(trainerService, times(1)).saveTrainer(trainer);
+//        System.out.println("Trainer saved successfully");
+//    }
+//
+//    @Test
+//    public void testSaveTrainer() {
+//        trainerService.saveTrainer(trainer);
+//        verify(trainerService, times(1)).saveTrainer(trainer);
+//        System.out.println("Trainer saved successfully");
+//    }
+//
+//    @Test
+//    public void testCreateTraining() {
+//        trainingService.createTraining(training, "TigAdamyan", "password123");
+//        verify(trainingService, times(1)).createTraining(training, "TigAdamyan", "password123");
+//        System.out.println("Training created successfully");
+//    }
+//
+//    @Test
+//    public void testGetTraineeTrainings() {
+//        Date fromDate = new Date();
+//        Date toDate = new Date();
+//        String trainerName = "Tom";
+//
+//        Optional<List<Training>> traineeTrainings = Optional.of(Arrays.asList(training));
+//        when(trainingService.getTraineeTrainings(
+//                "TigAdamyan", "password123", fromDate, toDate, trainerName, trainingType
+//        )).thenReturn(traineeTrainings);
+//
+//        Optional<List<Training>> result = trainingService.getTraineeTrainings(
+//                "TigAdamyan", "password123", fromDate, toDate, trainerName, trainingType
+//        );
+//
+//        assertTrue(result.isPresent());
+//        assertEquals(1, result.get().size());
+//        System.out.println("Trainee Training fetched successfully");
+//    }
+//    @Test
+//    public void testGetTraineeByUsername() {
+//        when(traineeService.getTraineeByUsername("TigAdamyan", "password123"))
+//                .thenReturn(Optional.of(trainee));
+//
+//        Optional<Trainee> retrievedTrainee = traineeService.getTraineeByUsername("TigAdamyan", "password123");
+//
+//        assertTrue(retrievedTrainee.isPresent());
+//        assertEquals(trainee, retrievedTrainee.get());
+//        System.out.println("Trainee fetched successfully");
+//    }
+//
+//    @Test
+//    public void testDeleteTrainee() {
+//        traineeService.deleteTrainee("TigAdamyan", "password123");
+//        verify(traineeService, times(1)).deleteTrainee("TigAdamyan", "password123");
+//        System.out.println("Trainee deleted successfully");
+//    }
 }

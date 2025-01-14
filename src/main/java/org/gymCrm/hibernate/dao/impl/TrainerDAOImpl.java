@@ -2,7 +2,6 @@ package org.gymCrm.hibernate.dao.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import org.gymCrm.hibernate.dao.TrainerDAO;
-import org.gymCrm.hibernate.model.Trainee;
 import org.gymCrm.hibernate.model.Trainer;
 import org.gymCrm.hibernate.util.UserCredentialsUtil;
 import org.hibernate.NonUniqueResultException;

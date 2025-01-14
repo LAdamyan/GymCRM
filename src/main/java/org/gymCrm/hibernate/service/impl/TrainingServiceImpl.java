@@ -29,33 +29,39 @@ public class TrainingServiceImpl implements TrainingService {
 
     @Override
     public void createTraining(Training training, String username, String password) {
-        if (!userDetailsService.authenticate(username, password)) {
-            throw new SecurityException("Authentication failed for user: " + username + " permission denied");
-        }
         trainingDAO.create(training);
         log.info("Created training {}", training);
     }
-
+    @Transactional(readOnly = true)
     @Override
     public Optional<List<Training>> getTrainingByType(TrainingType type, String username, String password) {
-        if (!userDetailsService.authenticate(username, password)) {
-            throw new SecurityException("Authentication failed for user: " + username + " permission denied");
-        }
         return trainingDAO.selectByType(type);
     }
     @Transactional
     @Override
     public Optional<List<Training>> getTraineeTrainings(String username, String password, Date fromDate, Date toDate, String trainerName, TrainingType trainingType) {
-        if (!userDetailsService.authenticate(username, password)) {
-            throw new SecurityException("Authentication failed for user: " + username + " permission denied");
-        }
         return trainingDAO.getTraineeTrainings(username,fromDate,toDate,trainerName,trainingType);
     }
+    @Transactional(readOnly = true)
+    @Override
+    public Optional<List<Training>> getTraineeTrainings(String username, Date fromDate, Date toDate, String trainerName, TrainingType trainingType) {
+        return trainingDAO.getTraineeTrainings(username,fromDate,toDate,trainerName,trainingType);
+
+    }
+    @Transactional
     @Override
     public Optional<List<Training>> getTrainerTrainings(String username, String password, Date fromDate, Date toDate, String traineeName) {
-        if (!userDetailsService.authenticate(username, password)) {
-            throw new SecurityException("Authentication failed for user: " + username + " permission denied");
-        }
         return  trainingDAO.getTrainerTrainings(username,fromDate,toDate,traineeName);
+    }
+    @Transactional(readOnly = true)
+    @Override
+    public Optional<List<Training>> getTrainerTrainings(String username, Date fromDate, Date toDate, String traineeName) {
+        return trainingDAO.getTrainerTrainings(username,fromDate,toDate,traineeName);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<String> getAllTrainingTypes() {
+        return trainingDAO.getDistinctTrainingTypes();
     }
 }

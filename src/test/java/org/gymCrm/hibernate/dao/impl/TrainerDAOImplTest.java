@@ -39,12 +39,21 @@ class TrainerDAOImplTest {
     @Test
     void testCreateTrainer() {
         Trainer trainer = new Trainer();
-        trainer.setFirstName("Lil");
-        trainer.setLastName("Adam");
+        trainer.setFirstName("John");
+        trainer.setLastName("Doe");
+
+        when(session.createQuery("FROM Trainer WHERE username = :username", Trainer.class))
+                .thenReturn(mock(org.hibernate.query.Query.class));
+        when(session.createQuery("FROM Trainer WHERE username = :username", Trainer.class)
+                .setParameter("username", "John.Doe"))
+                .thenReturn(mock(org.hibernate.query.Query.class));
 
         trainerDAO.create(trainer);
 
-        verify(session).save(trainer);
+        verify(session, times(1)).save(trainer);
+        assertNotNull(trainer.getUsername());
+        assertNotNull(trainer.getPassword());
+
     }
 
     @Test

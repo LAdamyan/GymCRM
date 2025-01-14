@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.*;
@@ -30,6 +31,7 @@ class TraineeDAOImplTest {
 
     @BeforeEach
     void setUp() {
+        MockitoAnnotations.openMocks(this);
         when(sessionFactory.getCurrentSession()).thenReturn(session);
     }
 
@@ -39,9 +41,17 @@ class TraineeDAOImplTest {
         trainee.setFirstName("John");
         trainee.setLastName("Doe");
 
+        when(session.createQuery("FROM Trainee WHERE username = :username", Trainee.class))
+                .thenReturn(mock(org.hibernate.query.Query.class));
+        when(session.createQuery("FROM Trainee WHERE username = :username", Trainee.class)
+                .setParameter("username", "John.Doe"))
+                .thenReturn(mock(org.hibernate.query.Query.class));
+
         traineeDAO.create(trainee);
 
-        verify(session).save(trainee);
+        verify(session, times(1)).save(trainee);
+        assertNotNull(trainee.getUsername());
+        assertNotNull(trainee.getPassword());
     }
 
     @Test
@@ -57,15 +67,22 @@ class TraineeDAOImplTest {
 
     @Test
     void testDeleteTrainee() {
-        String username = "johndoe";
         Trainee trainee = new Trainee();
-        trainee.setUsername(username);
+        trainee.setUsername("john.doe");
 
-        when(session.get(Trainee.class, username)).thenReturn(trainee);
+        when(session.createQuery("From Trainee t WHERE t.username=:username", Trainee.class))
+                .thenReturn(mock(org.hibernate.query.Query.class));
+        when(session.createQuery("From Trainee t WHERE t.username=:username", Trainee.class)
+                .setParameter("username", "john.doe"))
+                .thenReturn(mock(org.hibernate.query.Query.class));
+        when(session.createQuery("From Trainee t WHERE t.username=:username", Trainee.class)
+                .setParameter("username", "john.doe")
+                .list())
+                .thenReturn(List.of(trainee));
 
-        traineeDAO.delete(username);
+        traineeDAO.delete("john.doe");
 
-        verify(session).delete(trainee);
+        verify(session, times(1)).delete(trainee);
     }
 
     @Test
