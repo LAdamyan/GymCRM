@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.persistence.EntityNotFoundException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -71,7 +72,7 @@ public class TraineeDAOImpl implements TraineeDAO {
         log.info("Deleting trainee: {}", username);
         Session session = sessionFactory.getCurrentSession();
         try {
-            List<Trainee> trainees = session.createQuery("From Trainee t WHERE t.username=:username", Trainee.class)
+            List<Trainee> trainees = session.createQuery("From Trainee t WHERE t.username = :username", Trainee.class)
                     .setParameter("username", username)
                     .list();
             if (!trainees.isEmpty()) {
@@ -90,13 +91,22 @@ public class TraineeDAOImpl implements TraineeDAO {
         log.info("Fetching trainee by username: {}", username);
         Session session = sessionFactory.getCurrentSession();
         try {
-            Trainee trainee = session.createQuery("From Trainee t WHERE t.username=:username", Trainee.class)
+            Trainee trainee = session.createQuery("From Trainee t WHERE t.username = :username", Trainee.class)
                     .setParameter("username", username)
+                    .setMaxResults(1)
                     .uniqueResult();
-            return Optional.ofNullable(trainee);
+            if (trainee != null) {
+                log.info("Trainee found: {}", trainee.getUsername());
+            } else {
+                log.warn("No trainee found with username: {}", username);
+            }
+                return Optional.ofNullable(trainee);
         } catch (NonUniqueResultException e) {
-            log.warn("Multiple trainees found with username: {}", username);
+            log.error("Error fetching trainee: multiple trainees found with username {}", username, e);
             return Optional.empty();
+        } catch (Exception e) {
+            log.error("Error occurred while fetching trainee: {}", username, e);
+            throw e;
         }
     }
 
@@ -113,7 +123,7 @@ public class TraineeDAOImpl implements TraineeDAO {
     public void changeTraineesPassword(String username, String newPassword) {
         Session session = sessionFactory.getCurrentSession();
         try {
-            Trainee trainee = session.createQuery("FROM Trainee t WHERE t.username =: username", Trainee.class)
+            Trainee trainee = session.createQuery("FROM Trainee t WHERE t.username = :username", Trainee.class)
                     .setParameter("username", username)
                     .uniqueResult();
             if (trainee != null) {
@@ -154,12 +164,14 @@ public class TraineeDAOImpl implements TraineeDAO {
     public void updateTraineeTrainers(String traineeUsername, List<Trainer> trainers) {
         Session session = sessionFactory.getCurrentSession();
         try {
-            Trainee trainee = session.createQuery("FROM Trainee WHERE username =: username", Trainee.class)
+            Trainee trainee = session.createQuery("FROM Trainee WHERE username = :username", Trainee.class)
                     .setParameter("username", traineeUsername)
                     .uniqueResult();
             if (trainee != null) {
                 trainee.setTrainers(new HashSet<>(trainers));
                 session.update(trainee);
+            } else {
+                throw new EntityNotFoundException("Trainee with username " + traineeUsername + " not found");
             }
         } catch (Exception e) {
             log.error("Error while updating trainee " + traineeUsername + " trainers", e);

@@ -1,4 +1,4 @@
-package org.gymCrm.hibernate.dto;
+package org.gymCrm.hibernate.dto.address;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

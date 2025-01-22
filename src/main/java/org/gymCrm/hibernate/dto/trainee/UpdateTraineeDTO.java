@@ -1,7 +1,8 @@
-package org.gymCrm.hibernate.dto;
+package org.gymCrm.hibernate.dto.trainee;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
+import org.gymCrm.hibernate.dto.address.AddressDTO;
 
 import java.time.LocalDate;
 

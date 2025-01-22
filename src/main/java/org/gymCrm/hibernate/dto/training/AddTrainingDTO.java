@@ -1,9 +1,8 @@
-package org.gymCrm.hibernate.dto;
+package org.gymCrm.hibernate.dto.training;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
-import org.gymCrm.hibernate.model.TrainingType;
 
 import java.util.Date;
 

@@ -18,7 +18,6 @@ import java.util.Optional;
 @Repository
 public class TrainingDAOImpl implements TrainingDAO {
 
-
     @Autowired
     private SessionFactory sessionFactory;
 
@@ -50,7 +49,7 @@ public class TrainingDAOImpl implements TrainingDAO {
         }
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     @Override
     public Optional<List<Training>> getTraineeTrainings(String username, Date fromDate, Date toDate, String trainerName, TrainingType trainingType) {
         Session session = sessionFactory.getCurrentSession();
@@ -59,9 +58,10 @@ public class TrainingDAOImpl implements TrainingDAO {
                 "JOIN t.trainingType tt " +
                 "JOIN t.trainers tn " +
                 "WHERE tr.username = :username " +
-                "AND t.trainingDate BETWEEN :fromDate AND :toDate " +
-                "AND tt.typeName = :typeName " +
-                "AND tn.firstName = :trainerName";
+                (fromDate != null ? "AND t.trainingDate >= :fromDate " : "") +
+                (toDate != null ? "AND t.trainingDate <= :toDate " : "") +
+                (trainerName != null ? "AND tn.firstName = :trainerName " : "") +
+                (trainingType != null ? "AND tt.typeName = :typeName " : "");
         try {
             List<Training> trainings = session.createQuery(hql, Training.class)
                     .setParameter("username", username)
@@ -76,7 +76,7 @@ public class TrainingDAOImpl implements TrainingDAO {
             throw e;
         }
     }
-
+    @Transactional(readOnly = true)
     @Override
     public Optional<List<Training>> getTrainerTrainings(String username, Date fromDate, Date toDate, String traineeName) {
         Session session = sessionFactory.getCurrentSession();
@@ -84,8 +84,8 @@ public class TrainingDAOImpl implements TrainingDAO {
                 "JOIN t.trainers tr " +
                 "JOIN t.trainees tn " +
                 "WHERE tr.username = :username " +
-                "AND t.trainingDate BETWEEN :fromDate AND:toDate" +
-                " AND tn.firstName =:traineeName";
+                "AND t.trainingDate BETWEEN :fromDate AND :toDate" +
+                " AND tn.firstName = :traineeName";
         try {
             List<Training> trainings = session.createQuery(hql, Training.class)
                     .setParameter("username", username)
@@ -99,7 +99,7 @@ public class TrainingDAOImpl implements TrainingDAO {
             throw e;
         }
     }
-
+    @Transactional(readOnly = true)
     @Override
     public List<String> getDistinctTrainingTypes() {
         Session session = sessionFactory.getCurrentSession();

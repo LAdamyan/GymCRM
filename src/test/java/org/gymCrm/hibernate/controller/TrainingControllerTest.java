@@ -1,9 +1,10 @@
 package org.gymCrm.hibernate.controller;
 
-import org.gymCrm.hibernate.dto.AddTrainingDTO;
-import org.gymCrm.hibernate.dto.TrainingTypeDTO;
+import org.gymCrm.hibernate.dto.training.AddTrainingDTO;
+import org.gymCrm.hibernate.dto.training.TraineeTrainingResponse;
+import org.gymCrm.hibernate.dto.training.TrainingDTO;
+import org.gymCrm.hibernate.dto.training.TrainingTypeDTO;
 import org.gymCrm.hibernate.model.Training;
-import org.gymCrm.hibernate.model.TrainingType;
 import org.gymCrm.hibernate.service.TrainingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -97,11 +98,11 @@ class TrainingControllerTest {
 
         when(trainingService.getTraineeTrainings(eq(username), any(), any(), any(), any())).thenReturn(Optional.of(trainings));
 
-        ResponseEntity<Optional<List<Training>>> response = trainingController.getTraineeTrainings(username, null, null, null, null);
+        ResponseEntity<List<TraineeTrainingResponse>>response  = trainingController.getTraineeTrainings(username, null, null, null, null);
 
         assertEquals(200, response.getStatusCodeValue());
-        assertTrue(response.getBody().isPresent());
-        assertEquals(2, response.getBody().get().size());
+        assertNotNull(response.getBody());
+        assertEquals(2, response.getBody().size());
     }
 
     @Test
@@ -110,10 +111,11 @@ class TrainingControllerTest {
 
         when(trainingService.getTraineeTrainings(eq(username), any(), any(), any(), any())).thenReturn(Optional.empty());
 
-        ResponseEntity<Optional<List<Training>>> response = trainingController.getTraineeTrainings(username, null, null, null, null);
+        ResponseEntity<List<TraineeTrainingResponse>> response = trainingController.getTraineeTrainings(username, null, null, null, null);
 
         assertEquals(200, response.getStatusCodeValue());
-        assertFalse(response.getBody().isPresent());
+        assertNotNull(response.getBody());
+        assertEquals(2, response.getBody().size());
     }
     @Test
     void testGetTrainerTrainings_Success() {
@@ -125,11 +127,11 @@ class TrainingControllerTest {
 
         when(trainingService.getTrainerTrainings(eq(username), any(), any(), any())).thenReturn(Optional.of(trainings));
 
-        ResponseEntity<Optional<List<Training>>> response = trainingController.getTrainerTrainings(username, null, null, null);
+        ResponseEntity<List<TrainingDTO>> response = trainingController.getTrainerTrainings(username, null, null, null);
 
         assertEquals(200, response.getStatusCodeValue());
-        assertTrue(response.getBody().isPresent());
-        assertEquals(2, response.getBody().get().size());
+        assertNotNull(response.getBody());
+        assertEquals(2, response.getBody().size());
     }
 
     @Test
@@ -138,11 +140,12 @@ class TrainingControllerTest {
 
         when(trainingService.getTrainerTrainings(eq(username), any(), any(), any())).thenReturn(Optional.empty());
 
-        ResponseEntity<Optional<List<Training>>> response = trainingController.getTrainerTrainings(username, null, null, null);
+        ResponseEntity<List<TrainingDTO>> response = trainingController.getTrainerTrainings(username, null, null, null);
 
         assertEquals(200, response.getStatusCodeValue());
-        assertFalse(response.getBody().isPresent());
-    }
+        assertNotNull(response.getBody());
+        assertTrue(response.getBody().isEmpty());
+   }
     @Test
     void testGetTrainingTypes_Success() {
         List<String> trainingTypes = Arrays.asList("Cardio", "Strength", "Yoga");

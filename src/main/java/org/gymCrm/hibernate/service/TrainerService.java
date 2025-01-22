@@ -1,6 +1,6 @@
 package org.gymCrm.hibernate.service;
 
-import org.gymCrm.hibernate.dto.UpdateTrainerDTO;
+import org.gymCrm.hibernate.dto.trainer.UpdateTrainerDTO;
 import org.gymCrm.hibernate.model.Trainer;
 
 import java.util.List;
@@ -17,4 +17,5 @@ public interface TrainerService {
     void changeTrainerActiveStatus(String username, String password);
     void changeTrainerActiveStatus(String username, String password,boolean isActive);
     Optional <List<Trainer>>getUnassignedTrainers(String username, String password,String TraineeUsername);
+    Optional<List<Trainer>> getUnassignedTrainers(String username);
 }

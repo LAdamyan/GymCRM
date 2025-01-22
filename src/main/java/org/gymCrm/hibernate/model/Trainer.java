@@ -4,8 +4,10 @@ import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import javax.persistence.*;
+import java.util.Objects;
 import java.util.Set;
 
 import static javax.persistence.CascadeType.ALL;
@@ -14,6 +16,7 @@ import static javax.persistence.CascadeType.ALL;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
+@ToString(callSuper = true)
 @Table(name = "trainers")
 @DiscriminatorValue("TRAINER")
 public class Trainer extends User {
@@ -22,7 +25,7 @@ public class Trainer extends User {
     @Column(name = "specialization")
     private String specialization;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "trainer_trainees",
             joinColumns = {@JoinColumn(name = "trainer_id")},
@@ -34,6 +37,19 @@ public class Trainer extends User {
     @ManyToOne(cascade = ALL)
     @JoinColumn(name = "training_id")
     private Training training;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        Trainer trainer = (Trainer) o;
+        return Objects.equals(this.getId(), trainer.getId());
+    }
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), this.getId());
+    }
 
 }
 

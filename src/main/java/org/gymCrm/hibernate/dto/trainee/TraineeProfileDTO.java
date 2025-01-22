@@ -1,7 +1,9 @@
-package org.gymCrm.hibernate.dto;
+package org.gymCrm.hibernate.dto.trainee;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.gymCrm.hibernate.dto.address.AddressDTO;
+import org.gymCrm.hibernate.dto.trainer.TrainerSummaryDTO;
 import org.gymCrm.hibernate.model.Trainee;
 
 import java.time.LocalDate;

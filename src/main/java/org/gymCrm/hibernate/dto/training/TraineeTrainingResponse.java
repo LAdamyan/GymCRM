@@ -1,18 +1,16 @@
-package org.gymCrm.hibernate.dto;
+package org.gymCrm.hibernate.dto.training;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.util.Date;
 
 @Data
 @AllArgsConstructor
-@NoArgsConstructor
-public class TrainingDTO {
+public class TraineeTrainingResponse {
     private String trainingName;
     private Date trainingDate;
     private String trainingType;
-    private int duration;
-
+    private int trainingDuration;
+    private String trainerName;
 }
