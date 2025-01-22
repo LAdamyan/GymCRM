@@ -10,11 +10,16 @@ import jakarta.validation.constraints.NotBlank;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.gymCrm.hibernate.dto.AddressDTO;
-import org.gymCrm.hibernate.dto.TraineeDTO;
-import org.gymCrm.hibernate.dto.TraineeProfileDTO;
+import org.gymCrm.hibernate.dto.address.AddressDTO;
+import org.gymCrm.hibernate.dto.trainee.TraineeDTO;
+import org.gymCrm.hibernate.dto.trainee.TraineeProfileDTO;
+import org.gymCrm.hibernate.dto.trainee.UpdateTraineeDTO;
+import org.gymCrm.hibernate.dto.trainee.UpdateTraineeTrainersDTO;
+import org.gymCrm.hibernate.dto.trainer.TrainerDTO;
+import org.gymCrm.hibernate.dto.training.TrainingTypeDTO;
 import org.gymCrm.hibernate.model.Address;
 import org.gymCrm.hibernate.model.Trainee;
+import org.gymCrm.hibernate.model.TrainingType;
 import org.gymCrm.hibernate.service.TraineeService;
 import org.gymCrm.hibernate.service.UserDetailsService;
 import org.slf4j.MDC;
@@ -25,8 +30,10 @@ import org.springframework.web.server.ResponseStatusException;
 
 import javax.persistence.EntityNotFoundException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -52,7 +59,7 @@ public class TraineeController {
             @ApiResponse(code = 200, message = "Trainee successfully registered"),
             @ApiResponse(code = 400, message = "Invalid input")
     })
-    @PostMapping("/register")
+    @PostMapping
     public ResponseEntity<Map<String, String>> registerTrainee(@RequestBody @Valid TraineeDTO traineeDTO) {
         String transactionId = MDC.get("transactionId");
         log.info("[{}] POST /trainees/register called with request: {}", transactionId, traineeDTO);
@@ -147,5 +154,43 @@ public class TraineeController {
         log.info("[{}] Trainee status changed to {} for username: {}", transactionId, isActive, username);
 
         return ResponseEntity.ok().build();
+    }
+
+    @ApiOperation(value = "Update trainee's trainer list", tags = {"Trainees"})
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Trainee's trainer list updated successfully"),
+            @ApiResponse(code = 404, message = "Trainee not found"),
+            @ApiResponse(code = 400, message = "Invalid input data"),
+            @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @PutMapping("/{traineeUsername}/trainers")
+    public ResponseEntity<List<TrainerDTO>> updateTraineeTrainers(
+            @PathVariable String traineeUsername,
+            @RequestBody @Valid UpdateTraineeTrainersDTO requestDTO) {
+        String transactionId = MDC.get("transactionId");
+        log.info("[{}] PUT /trainees/{}/trainers called with request: {}", transactionId, traineeUsername, requestDTO);
+
+        if (!traineeUsername.equals(requestDTO.getTraineeUsername())) {
+            throw new IllegalArgumentException("Trainee username in path and body must match");
+        }
+        traineeService.updateTraineeTrainers(traineeUsername, requestDTO.getTrainerUsernames());
+
+        Optional<Trainee> traineeOpt = traineeService.getTraineeByUsername(traineeUsername);
+        if (traineeOpt.isPresent()) {
+            Trainee trainee = traineeOpt.get();
+
+        List<TrainerDTO> trainerDTOs = trainee.getTrainers().stream()
+                .map(trainer -> new TrainerDTO(
+                        trainer.getUsername(),
+                        trainer.getFirstName(),
+                        trainer.getLastName(),
+                        new TrainingType(
+                                trainer.getSpecialization())))
+                .collect(Collectors.toList());
+            log.info("Trainers updated successfully for trainee: {}", traineeUsername);
+            return ResponseEntity.ok(trainerDTOs);
+        } else {
+            return ResponseEntity.notFound().build();
+        }
     }
 }

@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Set;
 
 import static javax.persistence.GenerationType.IDENTITY;
@@ -47,5 +48,7 @@ public class Training {
         this.trainingName = trainingName;
         this.trainingDate = trainingDate;
         this.duration = duration;
+        this.trainees= new HashSet<>();
+        this.trainers= new HashSet<>();
     }
 }

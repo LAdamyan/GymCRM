@@ -2,26 +2,35 @@ package org.gymCrm.hibernate.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import org.gymCrm.hibernate.dao.TraineeDAO;
+import org.gymCrm.hibernate.dao.TrainerDAO;
+import org.gymCrm.hibernate.dto.trainee.UpdateTraineeDTO;
 import org.gymCrm.hibernate.model.Trainee;
+import org.gymCrm.hibernate.model.Trainer;
 import org.gymCrm.hibernate.service.TraineeService;
 import org.gymCrm.hibernate.service.UserDetailsService;
 import org.gymCrm.hibernate.util.UserCredentialsUtil;
+import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.persistence.EntityNotFoundException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 public class TraineeServiceImpl implements TraineeService {
 
     private final TraineeDAO traineeDAO;
+    private final TrainerDAO trainerDAO;
     private final UserDetailsService<Trainee> userDetailsService;
 
 
-    public TraineeServiceImpl(TraineeDAO traineeDAO, UserCredentialsUtil userCredentialsUtil, UserDetailsService<Trainee> userDetailsService) {
+    public TraineeServiceImpl(TraineeDAO traineeDAO, UserCredentialsUtil userCredentialsUtil, TrainerDAO trainerDAO, UserDetailsService<Trainee> userDetailsService) {
         this.traineeDAO = traineeDAO;
+        this.trainerDAO = trainerDAO;
         this.userDetailsService = userDetailsService;
     }
 
@@ -75,6 +84,32 @@ public class TraineeServiceImpl implements TraineeService {
         }
         traineeDAO.update(trainee);
         log.info("Updated trainee with username: {}", username);
+    }
+
+
+    @Transactional
+    @Override
+    public void updateTraineeTrainers(String traineeUsername, List<String> trainerUsernames) {
+        log.info("Updating trainers for trainee: {}", traineeUsername);
+
+        Trainee trainee = traineeDAO.selectByUsername(traineeUsername)
+                .orElseThrow(() -> new EntityNotFoundException("Trainee with username " + traineeUsername + " not found"));
+
+        List<Trainer> trainers = trainerUsernames.stream()
+                .map(username -> {
+                    Trainer trainer = trainerDAO.selectByUsername(username)
+                            .orElseThrow(() -> new EntityNotFoundException("Trainer with username " + username + " not found"));
+                    Hibernate.initialize(trainer.getTrainees());
+                    return trainer;
+                })
+                .collect(Collectors.toList());
+
+        Hibernate.initialize(trainee.getTrainers());
+
+        trainee.setTrainers(new HashSet<>(trainers));
+        traineeDAO.update(trainee);
+
+        log.info("Successfully updated trainers for trainee: {}", traineeUsername);
     }
 
     @Transactional
@@ -138,6 +173,21 @@ public class TraineeServiceImpl implements TraineeService {
             log.warn("Trainee not found for username: {}", username);
         }
     }
+
+    @Override
+    public Optional<Trainee> updateTrainee(String username, UpdateTraineeDTO updateTraineeDTO) {
+        Optional<Trainee>traineeOpt = traineeDAO.selectByUsername(username);
+        if(traineeOpt.isPresent()){
+            Trainee trainee = traineeOpt.get();
+            trainee.setFirstName(updateTraineeDTO.getFirstName());
+            trainee.setLastName(updateTraineeDTO.getLastName());
+            traineeDAO.create(trainee);
+            return Optional.of(trainee);
+        }
+        return Optional.empty();
+    }
+
+
 }
 
 

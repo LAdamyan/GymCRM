@@ -1,9 +1,10 @@
 package org.gymCrm.hibernate.controller;
 
-import org.gymCrm.hibernate.dto.TrainerDTO;
-import org.gymCrm.hibernate.dto.TrainerProfileDTO;
-import org.gymCrm.hibernate.dto.UpdateTrainerDTO;
+import org.gymCrm.hibernate.dto.trainer.TrainerDTO;
+import org.gymCrm.hibernate.dto.trainer.TrainerProfileDTO;
+import org.gymCrm.hibernate.dto.trainer.UpdateTrainerDTO;
 import org.gymCrm.hibernate.model.Trainer;
+import org.gymCrm.hibernate.model.TrainingType;
 import org.gymCrm.hibernate.service.TrainerService;
 import org.gymCrm.hibernate.service.UserDetailsService;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,7 +46,6 @@ class TrainerControllerTest {
         TrainerDTO trainerDTO = new TrainerDTO();
         trainerDTO.setFirstName("John");
         trainerDTO.setLastName("Doe");
-        trainerDTO.setSpecialization("Fitness");
 
         Trainer savedTrainer = new Trainer();
         savedTrainer.setUsername("jdoe");

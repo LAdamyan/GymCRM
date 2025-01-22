@@ -1,7 +1,7 @@
 package org.gymCrm.hibernate.controller;
 
-import org.gymCrm.hibernate.dto.TraineeDTO;
-import org.gymCrm.hibernate.dto.TraineeProfileDTO;
+import org.gymCrm.hibernate.dto.trainee.TraineeDTO;
+import org.gymCrm.hibernate.dto.trainee.TraineeProfileDTO;
 import org.gymCrm.hibernate.model.Trainee;
 import org.gymCrm.hibernate.service.TraineeService;
 import org.gymCrm.hibernate.service.UserDetailsService;

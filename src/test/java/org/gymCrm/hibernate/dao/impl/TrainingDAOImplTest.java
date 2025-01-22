@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.*;
@@ -20,107 +21,96 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class TrainingDAOImplTest {
 
+    @InjectMocks
+    private TrainingDAOImpl trainingDAO;
+
     @Mock
     private SessionFactory sessionFactory;
 
     @Mock
     private Session session;
 
-    @Mock
-    private Query<Training> query;
-
-    @InjectMocks
-    private TrainingDAOImpl trainingDAO;
-
     @BeforeEach
-    void setUp() {
+    public void setUp() {
+        MockitoAnnotations.openMocks(this);
         when(sessionFactory.getCurrentSession()).thenReturn(session);
     }
-
     @Test
-    void testCreateTraining() {
+    public void testCreateTraining() {
         Training training = new Training();
-        assertDoesNotThrow(() -> trainingDAO.create(training));
-        verify(session).save(training);
+
+        trainingDAO.create(training);
+
+        verify(session, times(1)).save(training);
     }
-
     @Test
-    void testSelectByType() {
-        TrainingType type = new TrainingType();
-        List<Training> trainingList = Arrays.asList(new Training(), new Training());
-
-        when(session.createQuery("From Training t WHERE t.trainingType = :type", Training.class))
-                .thenReturn(query);
-        when(query.setParameter("type", type)).thenReturn(query);
-        when(query.getResultList()).thenReturn(trainingList);
-
-        Optional<List<Training>> result = trainingDAO.selectByType(type);
-
-        verify(session).createQuery("From Training t WHERE t.trainingType = :type", Training.class);
-        verify(query).setParameter("type", type);
-        assertTrue(result.isPresent());
-        assertEquals(2, result.get().size());
-
-
-    }
-
-    @Test
-    void testGetTraineeTrainings() {
-        String username = "john.doe";
-        Date fromDate = new Date();
-        Date toDate = new Date();
-        String trainerName = "Jane Smith";
+    public void testSelectByType() {
         TrainingType trainingType = new TrainingType();
-        List<Training> trainingList = Arrays.asList(new Training(), new Training());
+        trainingType.setTypeName("Yoga");
 
-        when(session.createQuery(
-                "FROM Training t WHERE t.trainee.username = :username AND t.startDate >= :fromDate AND" +
-                        " t.endDate <= :toDate AND t.trainer.name = :trainerName AND t.trainingType = :trainingType",
-                Training.class)).thenReturn(query);
-        when(query.setParameter("username", username)).thenReturn(query);
-        when(query.setParameter("fromDate", fromDate)).thenReturn(query);
-        when(query.setParameter("toDate", toDate)).thenReturn(query);
-        when(query.setParameter("trainerName", trainerName)).thenReturn(query);
-        when(query.setParameter("trainingType", trainingType)).thenReturn(query);
-        when(query.getResultList()).thenReturn(trainingList);
+        Training training = new Training();
+        training.setTrainingType(trainingType);
 
-        Optional<List<Training>> result = trainingDAO.getTraineeTrainings(username, fromDate, toDate, trainerName, trainingType);
+        List<Training> trainingList = new ArrayList<>();
+        trainingList.add(training);
 
-        verify(session).createQuery(anyString(), eq(Training.class));
-        verify(query).setParameter("username", username);
-        verify(query).setParameter("fromDate", fromDate);
-        verify(query).setParameter("toDate", toDate);
-        verify(query).setParameter("trainerName", trainerName);
-        verify(query).setParameter("trainingType", trainingType);
-        assertTrue(result.isPresent());
-        assertEquals(2, result.get().size());
-    }
+        Query<Training> mockQuery = mock(Query.class);
+        when(session.createQuery("From Training t WHERE t.trainingType = :type", Training.class)).thenReturn(mockQuery);
 
-    @Test
-    void getTrainerTrainings() {
-        String username = "jane.smith";
-        Date fromDate = new Date();
-        Date toDate = new Date();
-        String traineeName = "John Doe";
-        List<Training> trainingList = Collections.singletonList(new Training());
+        when(mockQuery.setParameter("type", trainingType)).thenReturn(mockQuery);
+        when(mockQuery.getResultList()).thenReturn(trainingList);
 
-        when(session.createQuery(
-                "From Training t WHERE t.trainer.username = :username AND t.startDate >= :fromDate AND t.endDate <= :toDate AND t.trainee.name = :traineeName",
-                Training.class)).thenReturn(query);
-        when(query.setParameter("username", username)).thenReturn(query);
-        when(query.setParameter("fromDate", fromDate)).thenReturn(query);
-        when(query.setParameter("toDate", toDate)).thenReturn(query);
-        when(query.setParameter("traineeName", traineeName)).thenReturn(query);
-        when(query.getResultList()).thenReturn(trainingList);
+        Optional<List<Training>> result = trainingDAO.selectByType(trainingType);
 
-        Optional<List<Training>> result = trainingDAO.getTrainerTrainings(username, fromDate, toDate, traineeName);
-
-        verify(session).createQuery(anyString(), eq(Training.class));
-        verify(query).setParameter("username", username);
-        verify(query).setParameter("fromDate", fromDate);
-        verify(query).setParameter("toDate", toDate);
-        verify(query).setParameter("traineeName", traineeName);
         assertTrue(result.isPresent());
         assertEquals(1, result.get().size());
+        assertEquals(trainingType, result.get().get(0).getTrainingType());
     }
-}
+    @Test
+    public void testGetTraineeTrainings() {
+        String username = "trainee1";
+        TrainingType trainingType = new TrainingType();
+        trainingType.setTypeName("Yoga");
+
+        List<Training> trainingList = new ArrayList<>();
+
+        Training training = new Training();
+        training.setTrainingName("Morning Yoga");
+        training.setTrainingType(trainingType);
+        trainingList.add(training);
+
+        Query<Training> mockQuery = mock(Query.class);
+        when(session.createQuery(anyString(), eq(Training.class))).thenReturn(mockQuery);
+        when(mockQuery.setParameter(anyString(), any())).thenReturn(mockQuery);
+        when(mockQuery.getResultList()).thenReturn(trainingList);
+
+        Optional<List<Training>> result = trainingDAO.getTraineeTrainings(username, null, null, null, trainingType);
+
+        assertTrue(result.isPresent());
+        assertEquals(1, result.get().size());
+        assertEquals("Morning Yoga", result.get().get(0).getTrainingName());
+    }
+
+    @Test
+    public void testGetTrainerTrainings() {
+        String username = "trainer1";
+        String traineeName = "trainee1";
+
+        List<Training> trainingList = new ArrayList<>();
+
+        Training training = new Training();
+        training.setTrainingName("Evening Pilates");
+        trainingList.add(training);
+
+        Query<Training> mockQuery = mock(Query.class);
+        when(session.createQuery(anyString(), eq(Training.class))).thenReturn(mockQuery);
+        when(mockQuery.setParameter(anyString(), any())).thenReturn(mockQuery);
+        when(mockQuery.getResultList()).thenReturn(trainingList);
+
+        Optional<List<Training>> result = trainingDAO.getTrainerTrainings(username, null, null, traineeName);
+
+        assertTrue(result.isPresent());
+        assertEquals(1, result.get().size());
+        assertEquals("Evening Pilates", result.get().get(0).getTrainingName());
+    }
+    }

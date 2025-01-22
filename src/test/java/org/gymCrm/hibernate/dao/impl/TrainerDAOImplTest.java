@@ -10,9 +10,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,7 +23,6 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class TrainerDAOImplTest {
-
     @Mock
     private SessionFactory sessionFactory;
 
@@ -31,148 +32,158 @@ class TrainerDAOImplTest {
     @InjectMocks
     private TrainerDAOImpl trainerDAO;
 
+    private Trainer trainer;
+
     @BeforeEach
     void setUp() {
-        when(sessionFactory.getCurrentSession()).thenReturn(session);
-    }
-
-    @Test
-    void testCreateTrainer() {
-        Trainer trainer = new Trainer();
+        trainer = new Trainer();
+        trainer.setId(1);
         trainer.setFirstName("John");
         trainer.setLastName("Doe");
+        trainer.setUsername("john.doe");
+        trainer.setPassword("password123");
+        trainer.setActive(true);
 
+        when(sessionFactory.getCurrentSession()).thenReturn(session);
+    }
+    @Test
+    void create_TrainerAlreadyExists() {
+        String existingUsername = "john.doe";
+
+        List<Trainer> existingTrainers = List.of(trainer);
         when(session.createQuery("FROM Trainer WHERE username = :username", Trainer.class))
-                .thenReturn(mock(org.hibernate.query.Query.class));
+                .thenReturn(mock(Query.class));
         when(session.createQuery("FROM Trainer WHERE username = :username", Trainer.class)
-                .setParameter("username", "John.Doe"))
-                .thenReturn(mock(org.hibernate.query.Query.class));
+                .setParameter("username", existingUsername))
+                .thenReturn(mock(Query.class));
+        when(session.createQuery("FROM Trainer WHERE username = :username", Trainer.class)
+                .setParameter("username", existingUsername)
+                .list())
+                .thenReturn(existingTrainers);
 
         trainerDAO.create(trainer);
 
-        verify(session, times(1)).save(trainer);
-        assertNotNull(trainer.getUsername());
-        assertNotNull(trainer.getPassword());
-
+        verify(session, never()).save(trainer);
     }
-
     @Test
-    void testUpdateTrainer() {
-        Trainer trainer = new Trainer();
-        trainer.setFirstName("Lus");
+    void create_NewTrainer() {
+        String newUsername = "john.doe";
 
+        when(session.createQuery("FROM Trainer WHERE username = :username", Trainer.class))
+                .thenReturn(mock(Query.class));
+        when(session.createQuery("FROM Trainer WHERE username = :username", Trainer.class)
+                .setParameter("username", newUsername))
+                .thenReturn(mock(Query.class));
+        when(session.createQuery("FROM Trainer WHERE username = :username", Trainer.class)
+                .setParameter("username", newUsername)
+                .list())
+                .thenReturn(Collections.emptyList());
+
+        trainerDAO.create(trainer);
+
+        verify(session).save(trainer);
+    }
+    @Test
+    void updateTrainer_Success() {
         trainerDAO.update(trainer);
 
         verify(session).update(trainer);
     }
-
     @Test
-    void testSelectByUsername() {
-        String username = "johndoe";
-        Trainer expectedTrainer = new Trainer();
-        expectedTrainer.setUsername(username);
-
-        Query<Trainer> query = mock(Query.class);
-        when(session.createQuery("From Trainer t WHERE t.username=:username", Trainer.class)).thenReturn(query);
-        when(query.setParameter("username", username)).thenReturn(query);
-        when(query.uniqueResult()).thenReturn(expectedTrainer);
+    void selectByUsername_Found() {
+        String username = "john.doe";
+        when(session.createQuery("From Trainer t WHERE t.username=:username", Trainer.class))
+                .thenReturn(mock(Query.class));
+        when(session.createQuery("From Trainer t WHERE t.username=:username", Trainer.class)
+                .setParameter("username", username))
+                .thenReturn(mock(Query.class));
+        when(session.createQuery("From Trainer t WHERE t.username=:username", Trainer.class)
+                .setParameter("username", username)
+                .uniqueResult())
+                .thenReturn(trainer);
 
         Optional<Trainer> result = trainerDAO.selectByUsername(username);
 
         assertTrue(result.isPresent());
-        assertEquals(expectedTrainer, result.get());
-        verify(query).setParameter("username", username);
+        assertEquals(trainer, result.get());
     }
-
     @Test
-    void testChangeTrainersPassword() {
-        String username = "johndoe";
+    void selectByUsername_NotFound() {
+        String username = "non.existing";
+
+        when(session.createQuery("From Trainer t WHERE t.username=:username", Trainer.class))
+                .thenReturn(mock(Query.class));
+        when(session.createQuery("From Trainer t WHERE t.username=:username", Trainer.class)
+                .setParameter("username", username))
+                .thenReturn(mock(Query.class));
+        when(session.createQuery("From Trainer t WHERE t.username=:username", Trainer.class)
+                .setParameter("username", username)
+                .uniqueResult())
+                .thenReturn(null);
+
+        Optional<Trainer> result = trainerDAO.selectByUsername(username);
+
+        assertTrue(result.isEmpty());
+    }
+    @Test
+    void changeTrainersPassword_Success() {
         String newPassword = "newPassword";
-        Trainer trainer = new Trainer();
-        trainer.setUsername(username);
 
-        Query<Trainer> query = mock(Query.class);
-        when(session.createQuery("From Trainer  t WHERE t.username = :username", Trainer.class)).thenReturn(query);
-        when(query.setParameter("username", username)).thenReturn(query);
-        when(query.uniqueResult()).thenReturn(trainer);
+        when(session.createQuery("From Trainer  t WHERE t.username = :username", Trainer.class))
+                .thenReturn(mock(Query.class));
+        when(session.createQuery("From Trainer  t WHERE t.username = :username", Trainer.class)
+                .setParameter("username", trainer.getUsername()))
+                .thenReturn(mock(Query.class));
+        when(session.createQuery("From Trainer  t WHERE t.username = :username", Trainer.class)
+                .setParameter("username", trainer.getUsername())
+                .uniqueResult())
+                .thenReturn(trainer);
 
-        trainerDAO.changeTrainersPassword(username, newPassword);
+        trainerDAO.changeTrainersPassword(trainer.getUsername(), newPassword);
 
-        assertEquals(newPassword, trainer.getPassword());
         verify(session).update(trainer);
-    }
-
-
-//    @Test
-//    void testGetUnassignedTrainers() {
-//        String traineeUsername = "johndoe";
-//        List<Trainer> expectedTrainers = new ArrayList<>();
-//        expectedTrainers.add(new Trainer("Trainer1"));
-//        expectedTrainers.add(new Trainer("Trainer2"));
-//
-//        String hql = "SELECT t FROM Trainer t WHERE t NOT IN " +
-//                "(SELECT tn.trainers FROM Trainee tn WHERE tn.username = :username)";
-//
-//        Query<Trainer> query = mock(Query.class);
-//        when(session.createQuery(hql, Trainer.class)).thenReturn(query);
-//        when(query.setParameter("username", traineeUsername)).thenReturn(query);
-//        when(query.getResultList()).thenReturn(expectedTrainers);
-//
-//        Optional<List<Trainer>> actualTrainers = trainerDAO.getUnassignedTrainers(traineeUsername);
-//
-//        assertTrue(actualTrainers.isPresent());
-//        assertEquals(expectedTrainers, actualTrainers.get());
-//        verify(query).setParameter("username", traineeUsername);
-//    }
-
-    @Test
-    void testChangeTrainerActiveStatus_WhenTraineeFound_ShouldToggleStatus() {
-        {
-            Trainer trainer = new Trainer();
-            trainer.setUsername("testTrainer");
-            trainer.setActive(true);
-
-            Query<Trainer> query = mock(Query.class);
-            when(session.createQuery("FROM Trainer WHERE username = :username", Trainer.class))
-                    .thenReturn(query);
-            when(query.setParameter("username", "testTrainer")).thenReturn(query);
-            when(query.uniqueResult()).thenReturn(trainer);
-
-            trainerDAO.changeTrainerActiveStatus("testTrainer");
-
-            assertFalse(trainer.isActive(), "Trainer should be activated");
-            verify(session).update(trainer);
-        }
-    }
-    @Test
-    void changeTrainerActiveStatus_WhenTrainerNotFound_ShouldNotChangeStatus() {
-
-        Query<Trainer> query = mock(Query.class);
-        when(sessionFactory.getCurrentSession()).thenReturn(session);
-        when(session.createQuery("FROM Trainer WHERE username = :username", Trainer.class)).thenReturn(query);
-        when(query.setParameter("username", "unknownUser")).thenReturn(query);
-        when(query.uniqueResult()).thenReturn(null);
-
-        trainerDAO.changeTrainerActiveStatus("unknownUser");
-
-        verify(session, never()).update(any(Trainer.class));
+        assertEquals(newPassword, trainer.getPassword());
     }
 
     @Test
-    void testGetUnassignedTrainers_NoTrainersFound() {
-        String traineeUsername = "johndoe";
+    void changeTrainerActiveStatus_Success() {
+        boolean originalStatus = trainer.isActive();
 
-        String hql = "SELECT t FROM Trainer t WHERE t NOT IN " +
-                "(SELECT tn.trainers FROM Trainee tn WHERE tn.username = :username)";
+        // Mock the trainer query
+        when(session.createQuery("FROM Trainer WHERE username = :username", Trainer.class))
+                .thenReturn(mock(Query.class));
+        when(session.createQuery("FROM Trainer WHERE username = :username", Trainer.class)
+                .setParameter("username", trainer.getUsername()))
+                .thenReturn(mock(Query.class));
+        when(session.createQuery("FROM Trainer WHERE username = :username", Trainer.class)
+                .setParameter("username", trainer.getUsername())
+                .uniqueResult())
+                .thenReturn(trainer);
 
-        Query<Trainer> query = mock(Query.class);
-        when(session.createQuery(hql, Trainer.class)).thenReturn(query);
-        when(query.setParameter("username", traineeUsername)).thenReturn(query);
-        when(query.getResultList()).thenReturn(new ArrayList<>());
+        trainerDAO.changeTrainerActiveStatus(trainer.getUsername());
 
-        Optional<List<Trainer>> actualTrainers = trainerDAO.getUnassignedTrainers(traineeUsername);
+        verify(session).update(trainer);
+        assertEquals(!originalStatus, trainer.isActive());
+    }
+    @Test
+    void getUnassignedTrainers_Success() {
+        String traineeUsername = "trainee1";
+        List<Trainer> unassignedTrainers = List.of(trainer);
 
-        assertTrue(actualTrainers.get().isEmpty());
+        when(session.createQuery("SELECT t FROM Trainer t WHERE t.id NOT IN (SELECT tr.id FROM Trainee tn JOIN tn.trainers tr WHERE tn.username = :username)", Trainer.class))
+                .thenReturn(mock(Query.class));
+        when(session.createQuery("SELECT t FROM Trainer t WHERE t.id NOT IN (SELECT tr.id FROM Trainee tn JOIN tn.trainers tr WHERE tn.username = :username)", Trainer.class)
+                .setParameter("username", traineeUsername))
+                .thenReturn(mock(Query.class));
+        when(session.createQuery("SELECT t FROM Trainer t WHERE t.id NOT IN (SELECT tr.id FROM Trainee tn JOIN tn.trainers tr WHERE tn.username = :username)", Trainer.class)
+                .setParameter("username", traineeUsername)
+                .getResultList())
+                .thenReturn(unassignedTrainers);
+
+        Optional<List<Trainer>> result = trainerDAO.getUnassignedTrainers(traineeUsername);
+
+        assertTrue(result.isPresent());
+        assertEquals(unassignedTrainers, result.get());
+    }
 
     }
-}

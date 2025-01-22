@@ -29,6 +29,9 @@ class TraineeDAOImplTest {
     @InjectMocks
     private TraineeDAOImpl traineeDAO;
 
+    @Mock
+    private Query<Trainee> query;
+
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
@@ -86,12 +89,11 @@ class TraineeDAOImplTest {
     }
 
     @Test
-    void testSelectByUsername() {
+    public void testSelectByUsername() {
         String username = "johndoe";
         Trainee expectedTrainee = new Trainee();
         expectedTrainee.setUsername(username);
 
-        Query<Trainee> query = mock(Query.class);
         when(session.createQuery("From Trainee t WHERE t.username=:username", Trainee.class)).thenReturn(query);
         when(query.setParameter("username", username)).thenReturn(query);
         when(query.uniqueResult()).thenReturn(expectedTrainee);
@@ -171,15 +173,12 @@ class TraineeDAOImplTest {
         String username = "johndoe";
         List<Trainer> newTrainers = new ArrayList<>();
 
-        Query<Trainee> query = mock(Query.class);
-        when(session.createQuery("FROM Trainee WHERE username =: username", Trainee.class))
-                .thenReturn(query);
+        when(session.createQuery("FROM Trainee WHERE username =: username", Trainee.class)).thenReturn(query);
         when(query.setParameter("username", username)).thenReturn(query);
-        when(query.uniqueResult()).thenReturn(null);
+        when(query.uniqueResult()).thenReturn(null); // Simulate non-existing trainee
 
-        traineeDAO.updateTraineeTrainers(username, newTrainers);
-
-        verify(session, never()).update(any(Trainee.class));
+        traineeDAO.updateTraineeTrainers(username, newTrainers); // Should not throw exception
+        verify(session, never()).update(any(Trainee.class)); // Verify that update is never called
     }
 
     @Test

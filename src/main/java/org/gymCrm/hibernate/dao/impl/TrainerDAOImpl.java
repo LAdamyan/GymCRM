@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.gymCrm.hibernate.dao.TrainerDAO;
 import org.gymCrm.hibernate.model.Trainer;
 import org.gymCrm.hibernate.util.UserCredentialsUtil;
+import org.hibernate.HibernateException;
 import org.hibernate.NonUniqueResultException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -70,7 +71,7 @@ public class TrainerDAOImpl implements TrainerDAO {
         log.info("Fetching trainer by username: {}", username);
         Session session = sessionFactory.getCurrentSession();
         try {
-            Trainer trainer = session.createQuery("From Trainer t WHERE t.username=:username", Trainer.class)
+            Trainer trainer = session.createQuery("From Trainer t WHERE t.username = :username", Trainer.class)
                     .setParameter("username", username)
                     .uniqueResult();
             return Optional.ofNullable(trainer);
@@ -97,7 +98,7 @@ public class TrainerDAOImpl implements TrainerDAO {
             throw e;
         }
     }
-
+    @Transactional
     @Override
     public void changeTrainerActiveStatus(String username) {
         Session session = sessionFactory.getCurrentSession();
@@ -119,19 +120,22 @@ public class TrainerDAOImpl implements TrainerDAO {
         }
     }
 
+    @Transactional(readOnly = true)
     @Override
     public Optional<List<Trainer>> getUnassignedTrainers(String traineeUsername) {
         Session session = sessionFactory.getCurrentSession();
         try {
-            String hql = "SELECT t FROM Trainer t WHERE t NOT IN " +
-                    "(SELECT tn.trainers FROM Trainee tn WHERE tn.username = :username)";
+            String hql = "SELECT t FROM Trainer t WHERE t.id NOT IN " +
+                    "(SELECT tr.id FROM Trainee tn JOIN tn.trainers tr WHERE tn.username = :username)";
+
             List<Trainer> trainers = session.createQuery(hql, Trainer.class)
                     .setParameter("username", traineeUsername)
                     .getResultList();
-            return Optional.ofNullable(trainers);
+
+            return Optional.of(trainers);
         } catch (Exception e) {
             log.error("Error while fetching unassigned trainers for trainee username: {}", traineeUsername, e);
-            throw e;
+            return Optional.empty();
         }
     }
 }

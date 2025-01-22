@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Past;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 import javax.persistence.*;
 import java.time.LocalDate;
@@ -14,6 +15,7 @@ import java.util.Set;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
+@ToString(callSuper = true)
 @Table(name = "trainees")
 @DiscriminatorValue("TRAINEE")
 public class Trainee extends User {
@@ -27,7 +29,7 @@ public class Trainee extends User {
     @Column(name="address")
     private Address address;
 
-    @ManyToMany(mappedBy = "trainees")
+    @ManyToMany(mappedBy = "trainees",fetch = FetchType.EAGER)
     @Column(name = "trainer_id")
     private Set<Trainer> trainers;
 

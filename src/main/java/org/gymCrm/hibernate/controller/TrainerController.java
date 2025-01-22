@@ -7,10 +7,13 @@ import io.swagger.annotations.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.gymCrm.hibernate.dto.TrainerDTO;
-import org.gymCrm.hibernate.dto.TrainerProfileDTO;
-import org.gymCrm.hibernate.dto.UpdateTrainerDTO;
+import org.gymCrm.hibernate.dto.trainer.ActiveTrainerDTO;
+import org.gymCrm.hibernate.dto.trainer.TrainerDTO;
+import org.gymCrm.hibernate.dto.trainer.TrainerProfileDTO;
+import org.gymCrm.hibernate.dto.trainer.UpdateTrainerDTO;
+import org.gymCrm.hibernate.dto.training.TrainingTypeDTO;
 import org.gymCrm.hibernate.model.Trainer;
+import org.gymCrm.hibernate.model.TrainingType;
 import org.gymCrm.hibernate.service.TrainerService;
 import org.gymCrm.hibernate.service.UserDetailsService;
 import org.slf4j.MDC;
@@ -19,9 +22,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
+
 @Slf4j
 @RestController
 @RequestMapping("/trainers")
@@ -32,10 +35,12 @@ public class TrainerController {
     private final TrainerService trainerService;
     private final UserDetailsService<Trainer> userDetailsService;
 
-    private void authenticate(String username,String password){
-        if(!userDetailsService.authenticate(username,password)){
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Invalid username or password");
+    private void authenticate(String username, String password) {
+        if (!userDetailsService.authenticate(username, password)) {
+            log.error("Authentication failed for user: {}", username);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid username or password");
         }
+        log.info("Authentication successful for user: {}", username);
     }
 
     @ApiOperation(value = "Register a new trainer", response = Map.class)
@@ -43,14 +48,14 @@ public class TrainerController {
             @ApiResponse(code = 200, message = "Trainer successfully registered"),
             @ApiResponse(code = 400, message = "Invalid input")
     })
-    @PostMapping("/register")
-    public ResponseEntity<Map<String,String>>registerTrainer(@RequestBody @Valid TrainerDTO trainerDTO){
+    @PostMapping
+    public ResponseEntity<Map<String, String>> registerTrainer(@RequestBody @Valid TrainerDTO trainerDTO) {
         String transactionId = MDC.get("transactionId");
-        log.info("[{}] POST /trainers/register called with request: {}",transactionId,trainerDTO);
+        log.info("[{}] POST /trainers/register called with request: {}", transactionId, trainerDTO);
+
         Trainer trainer = new Trainer();
         trainer.setFirstName(trainerDTO.getFirstName());
         trainer.setLastName(trainerDTO.getLastName());
-        trainer.setSpecialization(trainerDTO.getSpecialization());
         trainer.setActive(true);
 
         trainerService.saveTrainer(trainer);
@@ -58,7 +63,7 @@ public class TrainerController {
         Map<String, String> response = new HashMap<>();
         response.put("username", trainer.getUsername());
         response.put("password", trainer.getPassword());
-        log.info("[{}] Trainer registered successfully with username: {}",transactionId, trainer.getUsername());
+        log.info("[{}] Trainer registered successfully with username: {}", transactionId, trainer.getUsername());
         return ResponseEntity.ok(response);
 
     }
@@ -69,15 +74,16 @@ public class TrainerController {
             @ApiResponse(code = 404, message = "Trainer not found")
     })
     @GetMapping("/{username}")
-    public ResponseEntity<TrainerProfileDTO>getTrainerProfile(
+    public ResponseEntity<TrainerProfileDTO> getTrainerProfile(
             @PathVariable String username,
             @RequestHeader("X-Auth-Username") String authUsername,
-            @RequestHeader("X-Auth-Password") String authPassword){
-        String transactionId = MDC.get("transactionId");
-        log.info("[{}] GET /trainers/{} called",transactionId, username);
-        authenticate(authUsername,authPassword);
+            @RequestHeader("X-Auth-Password") String authPassword) {
 
-        Optional<Trainer>optionalTrainer = trainerService.getTrainerByUsername(username);
+        String transactionId = MDC.get("transactionId");
+        log.info("[{}] GET /trainers/{} called", transactionId, username);
+        authenticate(authUsername, authPassword);
+
+        Optional<Trainer> optionalTrainer = trainerService.getTrainerByUsername(username);
         return optionalTrainer.map(trainer -> ResponseEntity.ok
                 (new TrainerProfileDTO(trainer))).orElseGet(() ->
                 ResponseEntity.notFound().build());
@@ -95,19 +101,20 @@ public class TrainerController {
             @RequestHeader("X-Auth-Username") String authUsername,
             @RequestHeader("X-Auth-Password") String authPassword) {
         String transactionId = MDC.get("transactionId");
-        log.info("[{}] PUT /trainers/{} called with update data: {}",transactionId, username, updateDTO);
+        log.info("[{}] PUT /trainers/{} called with update data: {}", transactionId, username, updateDTO);
 
-        authenticate(authUsername,authPassword);
+        authenticate(authUsername, authPassword);
 
         Optional<Trainer> updatedTrainerOpt = trainerService.updateTrainer(username, updateDTO);
 
         if (updatedTrainerOpt.isPresent()) {
-            log.info("[{}] Trainer profile updated successfully for username: {}",transactionId, username);
+            log.info("[{}] Trainer profile updated successfully for username: {}", transactionId, username);
             return ResponseEntity.ok(new TrainerProfileDTO(updatedTrainerOpt.get()));
         }
-        log.warn("[{}] Trainer not found for username: {}",transactionId, username);
+        log.warn("[{}] Trainer not found for username: {}", transactionId, username);
         return ResponseEntity.notFound().build();
     }
+
     @ApiOperation(value = "Change trainer active status")
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = "Trainer status updated successfully"),
@@ -122,13 +129,46 @@ public class TrainerController {
             @RequestHeader("X-Auth-Password") String authPassword) {
 
 
-        authenticate(authUsername,authPassword);
+        authenticate(authUsername, authPassword);
         String transactionId = MDC.get("transactionId");
-        log.info("[{}] PATCH /trainers/{}/status called with isActive: {}",transactionId, username, isActive);
+        log.info("[{}] PATCH /trainers/{}/status called with isActive: {}", transactionId, username, isActive);
 
-        trainerService.changeTrainerActiveStatus(username,password,isActive);
-        log.info("[{}] Trainer status changed to {} for username: {}",transactionId, isActive, username);
+        trainerService.changeTrainerActiveStatus(username, password, isActive);
+        log.info("[{}] Trainer status changed to {} for username: {}", transactionId, isActive, username);
         return ResponseEntity.ok().build();
     }
 
+    @ApiOperation(value = "Get not assigned active trainers for a trainee", response = TrainerDTO.class, responseContainer = "List")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successfully retrieved list of not assigned active trainers"),
+            @ApiResponse(code = 404, message = "Trainee not found"),
+            @ApiResponse(code = 500, message = "Internal server error")
+    })
+    @GetMapping("/{username}/not-assigned-trainers")
+    public ResponseEntity<List<ActiveTrainerDTO>> getUnassignedActiveTrainers(
+            @PathVariable String username,
+            @RequestHeader("X-Auth-Username") String authUsername,
+            @RequestHeader("X-Auth-Password") String authPassword) {
+
+        String transactionId = MDC.get("transactionId");
+        log.info("[{}] GET /trainees/{}/not-assigned-trainers called", transactionId, username);
+        authenticate(authUsername, authPassword);
+
+        Optional<List<Trainer>> trainersOptional = trainerService.getUnassignedTrainers(username);
+
+        if (trainersOptional.isEmpty() || trainersOptional.get().isEmpty()) {
+            log.warn("[{}] No unassigned trainers found for trainee: {}", transactionId, username);
+            return ResponseEntity.ok(Collections.emptyList());
+        }
+        List<ActiveTrainerDTO> activeTrainerDTOs = trainersOptional.get().stream()
+                .map(trainer -> new ActiveTrainerDTO(
+                        trainer.getUsername(),
+                        trainer.getFirstName(),
+                        trainer.getLastName(),
+                        new TrainingType(trainer.getSpecialization()))
+                ).toList();
+        log.info("[{}] Successfully retrieved unassigned active trainers for trainee: {}", transactionId, username);
+        return ResponseEntity.ok(activeTrainerDTOs);
     }
+}
+

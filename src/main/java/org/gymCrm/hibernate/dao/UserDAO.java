@@ -8,4 +8,6 @@ public interface UserDAO <T extends User> {
 
     Optional<T> findByUsername(String username);
 
+    Optional<User> changePassword(String username, String newPassword);
+
 }

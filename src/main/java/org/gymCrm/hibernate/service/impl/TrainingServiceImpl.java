@@ -1,37 +1,43 @@
 package org.gymCrm.hibernate.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
+import org.gymCrm.hibernate.dao.TraineeDAO;
+import org.gymCrm.hibernate.dao.TrainerDAO;
 import org.gymCrm.hibernate.dao.TrainingDAO;
-import org.gymCrm.hibernate.model.Training;
-import org.gymCrm.hibernate.model.TrainingType;
-import org.gymCrm.hibernate.model.User;
+import org.gymCrm.hibernate.model.*;
 import org.gymCrm.hibernate.service.TrainingService;
 import org.gymCrm.hibernate.service.UserDetailsService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.persistence.EntityNotFoundException;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Slf4j
 @Service
 public class TrainingServiceImpl implements TrainingService {
 
     private final TrainingDAO trainingDAO;
+    private final TraineeDAO traineeDAO;
+    private final TrainerDAO trainerDAO;
     private final UserDetailsService<User> userDetailsService;
 
-    public TrainingServiceImpl(TrainingDAO trainingDAO, UserDetailsService<User> userDetailsService) {
+    public TrainingServiceImpl(TrainingDAO trainingDAO, TraineeDAO traineeDAO, TrainerDAO trainerDAO, UserDetailsService<User> userDetailsService) {
         this.trainingDAO = trainingDAO;
+        this.traineeDAO = traineeDAO;
+        this.trainerDAO = trainerDAO;
         this.userDetailsService = userDetailsService;
     }
-
-
+    @Transactional
     @Override
     public void createTraining(Training training, String username, String password) {
         trainingDAO.create(training);
         log.info("Created training {}", training);
     }
+
     @Transactional(readOnly = true)
     @Override
     public Optional<List<Training>> getTrainingByType(TrainingType type, String username, String password) {

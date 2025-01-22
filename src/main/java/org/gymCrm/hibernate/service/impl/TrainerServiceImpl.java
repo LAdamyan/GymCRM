@@ -1,27 +1,34 @@
 package org.gymCrm.hibernate.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
+import org.gymCrm.hibernate.dao.TraineeDAO;
 import org.gymCrm.hibernate.dao.TrainerDAO;
-import org.gymCrm.hibernate.dto.UpdateTrainerDTO;
+import org.gymCrm.hibernate.dto.trainer.UpdateTrainerDTO;
+import org.gymCrm.hibernate.model.Trainee;
 import org.gymCrm.hibernate.model.Trainer;
 import org.gymCrm.hibernate.service.TrainerService;
 import org.gymCrm.hibernate.service.UserDetailsService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.persistence.EntityNotFoundException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 public class TrainerServiceImpl implements TrainerService {
 
     private final TrainerDAO trainerDAO;
+    private final TraineeDAO traineDAO;
     private final UserDetailsService<Trainer> userDetailsService;
 
-    public TrainerServiceImpl(TrainerDAO trainerDAO, UserDetailsService userDetailsService) {
+    public TrainerServiceImpl(TrainerDAO trainerDAO, TraineeDAO traineDAO, UserDetailsService userDetailsService) {
 
         this.trainerDAO = trainerDAO;
+        this.traineDAO = traineDAO;
         this.userDetailsService = userDetailsService;
     }
 
@@ -135,5 +142,13 @@ public class TrainerServiceImpl implements TrainerService {
         log.info("Get unassigned trainers for trainee {} ", traineeUsername);
         return trainerDAO.getUnassignedTrainers(traineeUsername);
     }
+
+    @Override
+    public Optional<List<Trainer>> getUnassignedTrainers(String username) {
+        log.info("Get unassigned trainers for trainee {} ",username);
+        return trainerDAO.getUnassignedTrainers(username);
+    }
+
+
 
 }
