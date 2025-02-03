@@ -1,16 +1,18 @@
 package org.gymCrm.hibernate.model;
 
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
-import javax.persistence.*;
+
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-import static javax.persistence.CascadeType.ALL;
+
 
 @Data
 @AllArgsConstructor
@@ -21,22 +23,14 @@ import static javax.persistence.CascadeType.ALL;
 @DiscriminatorValue("TRAINER")
 public class Trainer extends User {
 
-    @NotNull(message = "Specialization cannot be null")
-    @Column(name = "specialization")
-    private String specialization;
+    @ManyToOne@JoinColumn(name = "training_type_id")
+    private TrainingType specialization;
 
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-            name = "trainer_trainees",
-            joinColumns = {@JoinColumn(name = "trainer_id")},
-            inverseJoinColumns = {@JoinColumn(name = "trainee_id")}
-    )
-    private Set<Trainee> trainees;
+    @ManyToMany(mappedBy = "trainers", fetch = FetchType.EAGER)
+    private Set<Trainee> trainees= new HashSet<>();
 
-    @NotNull(message = "Training cannot be null")
-    @ManyToOne(cascade = ALL)
-    @JoinColumn(name = "training_id")
-    private Training training;
+    @OneToMany(mappedBy = "trainer",cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private Set<Training> trainings = new HashSet<>();
 
     @Override
     public boolean equals(Object o) {

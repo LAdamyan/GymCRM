@@ -1,22 +1,14 @@
 package org.gymCrm.hibernate.config;
 
+import org.gymCrm.hibernate.GymCrmApplication;
+import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatcherServletInitializer;
 
-public class AppInit extends AbstractAnnotationConfigDispatcherServletInitializer {
+public class AppInit extends SpringBootServletInitializer {
 
     @Override
-    protected Class<?>[] getRootConfigClasses() {
-        return null;
-    }
-
-    @Override
-    protected Class<?>[] getServletConfigClasses() {
-        return new Class<?>[]{
-                AppConfig.class};
-    }
-
-    @Override
-    protected String[] getServletMappings() {
-        return new String[]{"/"};
+    protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {
+        return application.sources(GymCrmApplication.class);
     }
 }

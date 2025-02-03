@@ -1,152 +1,144 @@
 package org.gymCrm.hibernate.service.impl;
 
-import org.gymCrm.hibernate.dao.TraineeDAO;
+import org.gymCrm.hibernate.endpoint.CustomMetrics;
 import org.gymCrm.hibernate.model.Trainee;
+import org.gymCrm.hibernate.model.Trainer;
+import org.gymCrm.hibernate.repo.TraineeRepository;
 import org.gymCrm.hibernate.service.UserDetailsService;
+import org.gymCrm.hibernate.util.UserCredentialsUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
+
 class TraineeServiceImplTest {
-
-
-    @Mock
-    private TraineeDAO traineeDAO;
-
-    @Mock
-    private UserDetailsService<Trainee> userDetailsService;
 
     @InjectMocks
     private TraineeServiceImpl traineeService;
 
+    @Mock
+    private TraineeRepository traineeRepository;
+
+    @Mock
+    private CustomMetrics customMetrics;
+
+    @Mock
+    private UserCredentialsUtil userCredentialsUtil;
+
+    @Mock
+    private UserDetailsService<Trainee> userDetailsService;
+
     private Trainee trainee;
 
     @BeforeEach
-    void setUp(){
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
         trainee = new Trainee();
-        trainee.setUsername("lil.adam");
-        trainee.setPassword("password");
-    }
-
-    @Test
-    void saveTrainee_Success(){
-        traineeService.saveTrainee(trainee);
-
-        verify(traineeDAO,times(1)).create(trainee);
-    }
-
-    @Test
-    void getAllTrainees_AuthenticationSuccess(){
-        when(userDetailsService.authenticate(anyString(),anyString())).thenReturn(true);
-        when(traineeDAO.listAll()).thenReturn(Optional.of(List.of(trainee)));
-
-        Optional<List<Trainee>> result = traineeService.getAllTrainees("Lil","1234");
-
-        assertTrue(result.isPresent());
-        assertEquals(1,result.get().size());
-        assertEquals(trainee, result.get().get(0));
-    }
-
-    @Test
-    void getAllTrainees_AuthenticationFailure(){
-        when(userDetailsService.authenticate(anyString(),anyString())).thenReturn(false);
-
-        Optional<List<Trainee>> result = traineeService.getAllTrainees("admin", "wrongPassword");
-
-        assertTrue(result.isEmpty());
-        verify(userDetailsService, times(1)).authenticate("admin", "wrongPassword");
-    }
-    @Test
-    void getTraineeByUsername_AuthenticationSuccess() {
-        when(userDetailsService.authenticate(anyString(),anyString())).thenReturn(true);
-        when(traineeDAO.selectByUsername("lil.adam")).thenReturn(Optional.of(trainee));
-
-        Optional<Trainee> result = traineeService.getTraineeByUsername("lil.adam", "password123");
-
-        assertTrue(result.isPresent());
-        assertEquals("lil.adam", result.get().getUsername());
-        verify(userDetailsService, times(1)).authenticate("lil.adam", "password123");
-        verify(traineeDAO, times(1)).selectByUsername("lil.adam");
-    }
-    @Test
-    void getTraineeByUsername_AuthenticationFailure() {
-        when(userDetailsService.authenticate(anyString(),anyString())).thenReturn(false);
-
-        assertThrows(SecurityException.class, () ->
-                traineeService.getTraineeByUsername("john.doe", "wrongPassword")
-        );
-
-        verify(userDetailsService, times(1)).authenticate("john.doe", "wrongPassword");
-        verifyNoInteractions(traineeDAO);
-    }
-
-    @Test
-    void updateTrainee_AuthenticationSuccess() {
-        when(userDetailsService.authenticate(anyString(),anyString())).thenReturn(true);
-
-        traineeService.updateTrainee(trainee,"lil.adam","7777");
-
-        verify(userDetailsService, times(1)).authenticate("lil.adam","7777");
-        verify(traineeDAO, times(1)).update(trainee);
-    }
-
-    @Test
-    void deleteTrainee_AuthenticationSuccess() {
-        when(userDetailsService.authenticate(anyString(),anyString())).thenReturn(true);
-
-        traineeService.deleteTrainee("lil.adam","7777");
-
-        verify(userDetailsService, times(1)).authenticate("lil.adam","7777");
-        verify(traineeDAO,times(1)).delete("lil.adam");
-    }
-    @Test
-    void changeTraineesPassword_AuthenticationSuccess() {
-        when(userDetailsService.authenticate(anyString(),anyString())).thenReturn(true);
-
-        traineeService.changeTraineesPassword("lil.adam","oldPassword","newPassword");
-
-        verify(userDetailsService, times(1)).authenticate("lil.adam","oldPassword");
-        verify(traineeDAO, times(1)).changeTraineesPassword("lil.adam","newPassword");
-
-    }
-    @Test
-    public void testChangeTraineeActiveStatus_TraineeFound_ShouldToggleStatus() {
-        String username = "testUser";
-        String password = "testPass";
-        Trainee trainee = new Trainee();
+        trainee.setId(1);
+        trainee.setFirstName("John");
+        trainee.setLastName("Doe");
+        trainee.setUsername("john_doe");
+        trainee.setPassword("password123");
         trainee.setActive(true);
+    }
 
-        when(userDetailsService.authenticate(username, password)).thenReturn(true);
-        when(traineeDAO.selectByUsername(username)).thenReturn(Optional.of(trainee));
+    @Test
+    void testCreateTrainee() {
+        try (MockedStatic<UserCredentialsUtil> mockedStatic = Mockito.mockStatic(UserCredentialsUtil.class)) {
+            mockedStatic.when(() -> UserCredentialsUtil.generateUsername(anyString(), anyString()))
+                    .thenReturn("mocked_username");
+            when(userCredentialsUtil.generatePassword()).thenReturn("generatedPassword");
+            when(traineeRepository.save(any(Trainee.class))).thenReturn(trainee);
 
-        traineeService.changeTraineeActiveStatus(username, password);
+            traineeService.create(trainee);
 
-        assertEquals(true, trainee.isActive());
-        verify(traineeDAO, times(1)).changeTraineeActiveStatus(username);
+            assertEquals("mocked_username", trainee.getUsername());
+            assertEquals("generatedPassword", trainee.getPassword());
+            verify(traineeRepository, times(1)).save(any(Trainee.class));
+            verify(customMetrics, times(1)).incrementTraineeRegistration();
+        }
 
     }
     @Test
-    void testChangeTraineeActivation_FailedAuthenticationThrowsException() {
-        String username = "testUser";
-        String password = "testPass";
+    void testUpdateTrainee() {
+        when(userDetailsService.authenticate(anyString(), anyString())).thenReturn(true);
+        when(traineeRepository.existsById(anyInt())).thenReturn(true);
+        when(traineeRepository.save(any(Trainee.class))).thenReturn(trainee);
 
-        when(userDetailsService.authenticate(username, password)).thenReturn(false);
+        traineeService.update(trainee, "john_doe", "password123");
 
-        Exception exception = assertThrows(SecurityException.class, () -> {
-            traineeService.changeTraineeActiveStatus(username, password);
-        });
-
-        assertEquals("User testUser not authenticated, permission denied!", exception.getMessage());
-        verify(traineeDAO, never()).changeTraineeActiveStatus(username);
+        verify(traineeRepository, times(1)).save(trainee);
     }
+
+    @Test
+    void testDeleteTrainee() {
+        when(userDetailsService.authenticate(anyString(), anyString())).thenReturn(true);
+        doNothing().when(traineeRepository).deleteByUsername(anyString());
+
+        traineeService.delete("john_doe", "password123");
+
+        verify(traineeRepository, times(1)).deleteByUsername("john_doe");
+    }
+    @Test
+    void testSelectByUsername() {
+        when(traineeRepository.findByUsername(anyString())).thenReturn(Optional.of(trainee));
+
+        Optional<Trainee> foundTrainee = traineeService.selectByUsername("john_doe");
+
+        assertTrue(foundTrainee.isPresent());
+        assertEquals("john_doe", foundTrainee.get().getUsername());
+    }
+    @Test
+    void testListAllTrainees() {
+        List<Trainee> trainees = List.of(trainee);
+        when(traineeRepository.findAll()).thenReturn(trainees);
+
+        List<Trainee> result = traineeService.listAll();
+
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void testChangeTraineePassword() {
+        when(userDetailsService.authenticate(anyString(), anyString())).thenReturn(true);
+        when(traineeRepository.findByUsername(anyString())).thenReturn(Optional.of(trainee));
+
+        traineeService.changeTraineePassword("john_doe", "password123", "newPassword");
+
+        assertEquals("newPassword", trainee.getPassword());
+        verify(traineeRepository, times(1)).save(trainee);
+    }
+    @Test
+    void testChangeTraineeActiveStatus() {
+        when(userDetailsService.authenticate(anyString(), anyString())).thenReturn(true);
+        when(traineeRepository.findByUsername(anyString())).thenReturn(Optional.of(trainee));
+
+        traineeService.changeTraineeActiveStatus("john_doe", "password123", false);
+
+        assertFalse(trainee.isActive());
+        verify(traineeRepository, times(1)).save(trainee);
+    }
+
+    @Test
+    void testUpdateTraineeTrainers() {
+        List<Trainer> trainers = new ArrayList<>();
+        when(traineeRepository.findByUsername(anyString())).thenReturn(Optional.of(trainee));
+
+        traineeService.updateTraineeTrainers("john_doe", trainers);
+
+        assertEquals(trainers, new ArrayList<>(trainee.getTrainers()));
+        verify(traineeRepository, times(1)).save(trainee);
+    }
+
 }

@@ -1,18 +1,20 @@
 package org.gymCrm.hibernate.controller;
 
-import io.swagger.annotations.*;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gymCrm.hibernate.dto.training.AddTrainingDTO;
 import org.gymCrm.hibernate.dto.training.TraineeTrainingResponse;
 import org.gymCrm.hibernate.dto.training.TrainingDTO;
 import org.gymCrm.hibernate.dto.training.TrainingTypeDTO;
-import org.gymCrm.hibernate.model.Trainee;
-import org.gymCrm.hibernate.model.Trainer;
 import org.gymCrm.hibernate.model.Training;
 import org.gymCrm.hibernate.model.TrainingType;
-import org.gymCrm.hibernate.service.TrainingService;
+import org.gymCrm.hibernate.service.impl.TrainingServiceImpl;
 import org.slf4j.MDC;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -26,17 +28,16 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/trainings")
 @RequiredArgsConstructor
-@Api(value = "Training Management System", tags = {"Trainings"})
 public class TrainingController {
 
-    private final TrainingService trainingService;
+    private final TrainingServiceImpl trainingServiceImpl;
 
 
-    @ApiOperation(value = "Add a new training", tags = {"Trainings"})
+    @Operation(summary = "Add a new training", description = "Creates a new training record.")
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Training successfully created"),
-            @ApiResponse(code = 403, message = "Access denied"),
-            @ApiResponse(code = 500, message = "Internal server error")
+            @ApiResponse(responseCode = "200", description = "Training successfully created"),
+            @ApiResponse(responseCode = "403", description = "Access denied"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @PostMapping
     public ResponseEntity<?> addTraining(@RequestBody @Valid AddTrainingDTO addTrainingDTO) {
@@ -49,7 +50,7 @@ public class TrainingController {
 
             log.info("Converted AddTrainingDTO to Training entity: {}", training);
 
-            trainingService.createTraining(training, addTrainingDTO.getTrainerUsername(), addTrainingDTO.getTraineeUsername());
+            trainingServiceImpl.create(training);
 
             log.info("[{}]Training successfully created for trainer: {} and trainee: {}", transactionId, addTrainingDTO.getTrainerUsername(), addTrainingDTO.getTraineeUsername());
             return ResponseEntity.ok().build();
@@ -73,38 +74,36 @@ public class TrainingController {
         return training;
     }
 
-    @ApiOperation(value = "Get training for a trainee", response = ResponseEntity.class)
+    @Operation(summary = "Get training for a trainee", description = "Retrieves all training records assigned to a specific trainee.")
     @ApiResponses({
-            @ApiResponse(code = 200, message = "Successfully retrieved the list of trainings for the trainee"),
-            @ApiResponse(code = 404, message = "Trainee not found")
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved the list of trainings for the trainee"),
+            @ApiResponse(responseCode = "404", description = "Trainee not found")
     })
     @GetMapping("/trainee/{username}")
     public ResponseEntity<List<TraineeTrainingResponse>> getTraineeTrainings(
-            @ApiParam(value = "Username of trainee", required = true) @PathVariable String username,
-            @ApiParam(value = "Start date of the training period filter  (optional)") @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date fromDate,
-            @ApiParam(value = "End date of the training period filter  (optional)") @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date toDate,
-            @ApiParam(value = "Trainer name filter") @RequestParam(required = false) String trainerName,
-            @ApiParam(value = "Training type filter") @RequestParam(required = false) TrainingType trainingType) {
+            @PathVariable @NotBlank(message = "Username is required.") String username,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date fromDate,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date toDate,
+            @RequestParam(required = false) String trainerName,
+            @RequestParam(required = false) TrainingType trainingType) {
 
         String transactionId = MDC.get("transactionId");
         log.info("[{}] GET /trainings/trainee/{} called with filters fromDate: {}, toDate: {}, trainerName: {}, trainingType: {}",
                 transactionId, username, fromDate, toDate, trainerName, trainingType);
 
-        Optional<List<Training>> trainingsOptional = trainingService.getTraineeTrainings(username, fromDate, toDate, trainerName, trainingType);
+        Optional<List<Training>> trainingsOptional = trainingServiceImpl.getTraineeTrainings(username, fromDate, toDate, trainerName, trainingType);
 
         log.info("[{}] Retrieved trainings: {}", transactionId, trainingsOptional);
 
-        Optional<List<TraineeTrainingResponse>> trainingsOpt = trainingService.getTraineeTrainings(username, fromDate, toDate, trainerName, trainingType)
+        Optional<List<TraineeTrainingResponse>> trainingsOpt = trainingServiceImpl.getTraineeTrainings(username, fromDate, toDate, trainerName, trainingType)
                 .map(trainings -> trainings.stream()
                         .map(training -> new TraineeTrainingResponse(
                                 training.getTrainingName(),
                                 training.getTrainingDate(),
                                 training.getTrainingType().getTypeName(),
                                 training.getDuration(),
-                                training.getTrainers().stream()
-                                        .map(trainer -> trainer.getFirstName() + " " + trainer.getLastName())
-                                        .collect(Collectors.joining(", "))
-                        )).collect(Collectors.toList()));
+                                training.getTrainer() != null ? training.getTrainer().getFirstName() + " " + training.getTrainer().getLastName()
+                                        : "No trainer assigned")).collect(Collectors.toList()));
 
         if (trainingsOpt.isPresent() && !trainingsOpt.get().isEmpty()) {
             log.info("Successfully retrieved trainings for trainee: {}", username);
@@ -115,35 +114,32 @@ public class TrainingController {
 
     }
 
-    @ApiOperation(value = "Get training for a trainer", response = ResponseEntity.class)
+    @Operation(summary = "Get training for a trainer", description = "Retrieves all training records assigned to a specific trainer.")
     @ApiResponses({
-            @ApiResponse(code = 200, message = "Successfully retrieved the list of trainings for the trainer", response = TrainingDTO.class, responseContainer = "List"),
-            @ApiResponse(code = 204, message = "No trainings found for the trainer"),
-            @ApiResponse(code = 404, message = "Trainer not found")
-
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved the training list for the trainer"),
+            @ApiResponse(responseCode = "204", description = "No trainings found for the trainer"),
+            @ApiResponse(responseCode = "404", description = "Trainer not found")
     })
     @GetMapping("/trainer/{username}")
     public ResponseEntity<List<TrainingDTO>> getTrainerTrainings(
-            @ApiParam(value = "Username of trainer", required = true) @PathVariable String username,
-            @ApiParam(value = "Start date of the training period filter (optional)") @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date fromDate,
-            @ApiParam(value = "End date of the training period filter (optional)") @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date toDate,
-            @ApiParam(value = "Trainee name filter (optional)") @RequestParam(required = false) String traineeName) {
+            @PathVariable @NotBlank(message = "Username is required.") String username,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date fromDate,
+            @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date toDate,
+            @RequestParam(required = false) String traineeName) {
 
         String transactionId = MDC.get("transactionId");
         log.info("[{}] GET /trainings/trainer/{} called with filters fromDate: {}, toDate: {}, traineeName: {}",
                 transactionId, username, fromDate, toDate, traineeName);
 
-        Optional<List<TrainingDTO>> trainingsOpt = trainingService.getTrainerTrainings(username, fromDate, toDate, traineeName)
+        Optional<List<TrainingDTO>> trainingsOpt = trainingServiceImpl.getTrainerTrainings(username, fromDate, toDate, traineeName)
                 .map(trainings -> trainings.stream()
                         .map(training -> new TrainingDTO(
                                 training.getTrainingName(),
                                 training.getTrainingDate(),
                                 training.getTrainingType(),
                                 training.getDuration(),
-                                training.getTrainees().stream()
-                                        .map(trainee -> trainee.getFirstName() + " " + trainee.getLastName())
-                                        .collect(Collectors.joining(", "))
-                        )).collect(Collectors.toList()));
+                                training.getTrainee() != null ? training.getTrainee().getFirstName() + " " + training.getTrainee().getLastName()
+                                        : "No trainee assigned")).collect(Collectors.toList()));
 
         if (trainingsOpt.isPresent() && !trainingsOpt.get().isEmpty()) {
             log.info("Successfully retrieved trainings for trainer: {}", username);
@@ -153,16 +149,16 @@ public class TrainingController {
         }
     }
 
-    @ApiOperation(value = "Get all available training types", response = List.class)
+    @Operation(summary = "Get all available training types", description = "Retrieves a list of all available training types.")
     @ApiResponses({
-            @ApiResponse(code = 200, message = "Successfully retrieved list of training types")
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved list of training types")
     })
     @GetMapping("/types")
     public ResponseEntity<List<TrainingTypeDTO>> getTrainingTypes() {
         String transactionId = MDC.get("transactionId");
         log.info("[{}] GET /trainings/types called", transactionId);
 
-        List<String> trainingTypes = trainingService.getAllTrainingTypes();
+        List<String> trainingTypes = trainingServiceImpl.getDistinctTrainingTypes();
 
         List<TrainingTypeDTO> trainingTypeDTOs = trainingTypes.stream()
                 .map(TrainingTypeDTO::new)

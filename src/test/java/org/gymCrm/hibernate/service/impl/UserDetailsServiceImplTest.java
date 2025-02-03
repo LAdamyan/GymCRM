@@ -1,58 +1,65 @@
 package org.gymCrm.hibernate.service.impl;
 
-import org.gymCrm.hibernate.dao.UserDAO;
+import org.gymCrm.hibernate.model.Trainee;
 import org.gymCrm.hibernate.model.User;
+import org.gymCrm.hibernate.repo.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.MockitoAnnotations;
 
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
 class UserDetailsServiceImplTest {
-
-    @Mock
-    private UserDAO<User> userDAO;
 
     @InjectMocks
     private UserDetailsServiceImpl<User> userDetailsService;
 
-    @Test
-    void authenticate_SuccessfulAuthentication() {
-        String username = "john.doe";
-        String password = "password123";
+    @Mock
+    private UserRepository<User> userRepository;
 
-        User user = mock(User.class);
-        when(user.getPassword()).thenReturn(password);
+    private Trainee testUser;
 
-        when(userDAO.findByUsername(username)).thenReturn(Optional.of(user));
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
 
-        boolean result = userDetailsService.authenticate(username, password);
-
-        assertTrue(result, "Authentication should succeed with correct username and password.");
-        verify(userDAO, times(1)).findByUsername(username);
-        verify(user, times(1)).getPassword();
-
+        testUser = new Trainee();
+        testUser.setUsername("john.doe");
+        testUser.setPassword("password1");
+        testUser.setActive(true);
 
     }
 
     @Test
-    void authenticate_UserNotFound() {
-        String username = "nonexistent.user";
-        String password = "password123";
+    void testAuthenticateSuccess() {
+        when(userRepository.findByUsername(testUser.getUsername())).thenReturn(Optional.of(testUser));
 
-        when(userDAO.findByUsername(username)).thenReturn(Optional.empty());
+        boolean result = userDetailsService.authenticate(testUser.getUsername(), testUser.getPassword());
 
-        boolean result = userDetailsService.authenticate(username, password);
+        assertTrue(result);
+    }
 
-        assertFalse(result, "Authentication should fail if the user does not exist.");
-        verify(userDAO, times(1)).findByUsername(username);
+    @Test
+    void testAuthenticateInvalidPassword() {
+        when(userRepository.findByUsername(testUser.getUsername())).thenReturn(Optional.of(testUser));
+
+        boolean result = userDetailsService.authenticate(testUser.getUsername(), "wrongPassword");
+
+        assertFalse(result);
+    }
+
+    @Test
+    void testAuthenticateUserNotFound() {
+        when(userRepository.findByUsername(testUser.getUsername())).thenReturn(Optional.empty());
+
+        boolean result = userDetailsService.authenticate(testUser.getUsername(),testUser.getPassword());
+
+        assertFalse(result);
     }
 
 }

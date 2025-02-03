@@ -11,4 +11,7 @@ public class TrainerSummaryDTO {
     private String firstName;
     private String lastName;
     private TrainingType specialization;
+
+    public TrainerSummaryDTO(String trainer1) {
+    }
 }

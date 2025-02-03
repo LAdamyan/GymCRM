@@ -15,9 +15,8 @@ import java.util.List;
 
 @Slf4j
 @Configuration
-@ComponentScan(basePackages = "org.gymCrm.hibernate")
-@Import({HibernateConfig.class, SwaggerConfig.class, CustomTransactionInterceptor.class})
 @EnableWebMvc
+@ComponentScan(basePackages = "org.gymCrm.hibernate")
 public class AppConfig implements WebMvcConfigurer {
 
     private final CustomTransactionInterceptor customTransactionInterceptor;
@@ -26,21 +25,12 @@ public class AppConfig implements WebMvcConfigurer {
         this.customTransactionInterceptor = customTransactionInterceptor;
     }
 
+
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         log.info("Registering CustomTransactionInterceptor...");
         registry.addInterceptor(customTransactionInterceptor);
     }
 
-    @Override
-    public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
-        converters.add(new MappingJackson2HttpMessageConverter());
-    }
-
-    @Override
-    public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        registry.addResourceHandler("swagger-ui.html").addResourceLocations("classpath:/META-INF/resources/");
-        registry.addResourceHandler("/webjars/**").addResourceLocations("classpath:/META-INF/resources/webjars/");
-    }
 
 }

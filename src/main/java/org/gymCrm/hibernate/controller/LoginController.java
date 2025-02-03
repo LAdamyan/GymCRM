@@ -1,14 +1,15 @@
 package org.gymCrm.hibernate.controller;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.constraints.NotBlank;
 import lombok.extern.slf4j.Slf4j;
-import org.gymCrm.hibernate.dao.UserDAO;
 import org.gymCrm.hibernate.model.User;
+import org.gymCrm.hibernate.repo.UserRepository;
 import org.gymCrm.hibernate.service.UserDetailsService;
+import org.gymCrm.hibernate.service.impl.TraineeServiceImpl;
+import org.gymCrm.hibernate.service.impl.UserServiceImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,21 +20,22 @@ import java.util.Optional;
 @Slf4j
 @RequestMapping("/login")
 @RestController
-@Api(value = "Login Management System", tags = {"Login"})
 public class LoginController {
 
     private final UserDetailsService userDetailsService;
-    private final UserDAO userDAO;
 
+    private final UserServiceImpl userServiceImpl;
 
-    public LoginController(UserDetailsService userDetailsService, UserDAO userDAO) {
+    public LoginController(UserDetailsService userDetailsService, UserServiceImpl userServiceImpl) {
         this.userDetailsService = userDetailsService;
-        this.userDAO = userDAO;
+        this.userServiceImpl = userServiceImpl;
+
     }
-    @ApiOperation(value = "Login with username and password", response = String.class)
+
+    @Operation(summary = "Login with username and password", description = "Authenticate a user.")
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Login successful"),
-            @ApiResponse(code = 401, message = "Invalid username or password")
+            @ApiResponse(responseCode = "200", description = "Login successful"),
+            @ApiResponse(responseCode = "401", description = "Invalid username or password")
     })
     @GetMapping
     public ResponseEntity<String> login(
@@ -41,19 +43,20 @@ public class LoginController {
             @RequestParam @NotBlank(message = "Password is required") String password) {
 
         log.info(" Attempting login for user: {}", username);
-        if(userDetailsService.authenticate(username,password)){
+        if (userDetailsService.authenticate(username, password)) {
             log.info("Login successful for user: {}", username);
             return ResponseEntity.ok("200 OK");
-    }else{
+        } else {
             log.error("Login failed for user: {}", username);
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid username or password");
         }
-        }
+    }
 
-    @ApiOperation(value = "Change login credentials", response = String.class)
+    @Operation(summary = "Change login credentials", description = "Change the user's password.")
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Password changed successfully"),
-            @ApiResponse(code = 401, message = "Invalid old password")
+            @ApiResponse(responseCode = "200", description = "Password changed successfully"),
+            @ApiResponse(responseCode = "401", description = "Invalid old password"),
+            @ApiResponse(responseCode = "404", description = "User not found")
     })
     @PutMapping("/change-password")
     public ResponseEntity<String> changePassword(
@@ -65,9 +68,9 @@ public class LoginController {
             log.error("Password change failed for user: {} - Invalid old password", username);
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid old password");
         }
-        Optional<User> user = userDAO.findByUsername(username);
+        Optional<User> user = userServiceImpl.findByUsername(username);
         if (user.isPresent()) {
-            userDAO.changePassword(username, newPassword);
+            userServiceImpl.changePassword(username, newPassword);
             log.info("Password changed successfully for user: {}", username);
             return ResponseEntity.ok("Password changed successfully");
         } else {

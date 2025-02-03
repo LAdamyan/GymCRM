@@ -1,113 +1,105 @@
 package org.gymCrm.hibernate.service.impl;
 
-import org.gymCrm.hibernate.dao.TrainingDAO;
 import org.gymCrm.hibernate.model.Training;
 import org.gymCrm.hibernate.model.TrainingType;
-import org.gymCrm.hibernate.model.User;
-import org.gymCrm.hibernate.service.UserDetailsService;
+import org.gymCrm.hibernate.repo.TrainingRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.MockitoAnnotations;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
 class TrainingServiceImplTest {
 
     @InjectMocks
     private TrainingServiceImpl trainingService;
 
     @Mock
-    private TrainingDAO trainingDAO;
-
-    @Mock
-    private UserDetailsService<User> userDetailsService;
+    private TrainingRepository trainingRepository;
 
     private Training training;
-    private TrainingType trainingType;
-
 
     @BeforeEach
     void setUp() {
-        trainingType = new TrainingType();
-        trainingType.setTypeName("Yoga");
-
+        MockitoAnnotations.openMocks(this);
         training = new Training();
-        training.setTrainingName("Morning Yoga");
+        training.setTrainingName("Morning Cardio");
         training.setTrainingDate(new Date());
         training.setDuration(60);
-        training.setTrainingType(trainingType);
-    }
-    @Test
-    public void testCreateTraining() {
-
-        trainingService.createTraining(training, "trainerUsername", "trainerPassword");
-
-        verify(trainingDAO, times(1)).create(training);
+        training.setTrainingType(new TrainingType("CARDIO"));
     }
 
     @Test
-    public void testGetTrainingByType() {
-        when(trainingDAO.selectByType(trainingType)).thenReturn(Optional.of(List.of(training)));
+    void testCreate() {
+        when(trainingRepository.save(any(Training.class))).thenReturn(training);
 
-        Optional<List<Training>> result = trainingService.getTrainingByType(trainingType, "username", "password");
+        trainingService.create(training);
+
+        verify(trainingRepository).save(training);
+        assertNotNull(training);
+    }
+
+    @Test
+    void testSelectByType() {
+        TrainingType type = new TrainingType("CARDIO");
+        List<Training> expectedTrainings = new ArrayList<>();
+        expectedTrainings.add(training);
+
+        when(trainingRepository.findByTrainingType(type)).thenReturn(expectedTrainings);
+
+        Optional<List<Training>> result = trainingService.selectByType(type);
 
         assertTrue(result.isPresent());
         assertEquals(1, result.get().size());
-        assertEquals("Morning Yoga", result.get().get(0).getTrainingName());
-
+        assertEquals(training.getTrainingName(), result.get().get(0).getTrainingName());
     }
-
     @Test
-    public void testGetTraineeTrainings() {
+    void testGetTraineeTrainings() {
+        String username = "john.doe";
         Date fromDate = new Date();
         Date toDate = new Date();
-        String trainerName = "Tom";
-        String username = "traineeUsername";
+        String trainerName = "Trainer Name";
+        TrainingType trainingType = new TrainingType("CARDIO");
 
-        when(trainingDAO.getTraineeTrainings(username, fromDate, toDate, trainerName, trainingType))
-                .thenReturn(Optional.of(List.of(training)));
+        List<Training> trainings = new ArrayList<>();
+        trainings.add(training);
 
+        when(trainingRepository.findTraineeTrainings(anyString(), any(Date.class), any(Date.class), anyString(), anyString()))
+                .thenReturn(trainings);
 
         Optional<List<Training>> result = trainingService.getTraineeTrainings(username, fromDate, toDate, trainerName, trainingType);
 
         assertTrue(result.isPresent());
-        assertEquals(1, result.get().size());
-        assertEquals("Morning Yoga", result.get().get(0).getTrainingName());
+        assertFalse(result.get().isEmpty());
+        assertEquals(training.getTrainingName(), result.get().get(0).getTrainingName());
     }
     @Test
-    public void testGetTrainerTrainings() {
+    void testGetTrainerTrainings(){
+        String username = "Trainer.username";
         Date fromDate = new Date();
         Date toDate = new Date();
-        String traineeName = "Lil.Adamyan";
-        String username = "trainerUsername";
+        String traineeName = "Trainee.username";
 
-        when(trainingDAO.getTrainerTrainings(username, fromDate, toDate, traineeName))
-                .thenReturn(Optional.of(List.of(training)));
+        List<Training>trainings = new ArrayList<>();
+        trainings.add(training);
 
-        Optional<List<Training>> result = trainingService.getTrainerTrainings(username, fromDate, toDate, traineeName);
+        when(trainingRepository.findTrainerTrainings(anyString(),any(Date.class),any(Date.class),anyString())).thenReturn(trainings);
+
+        Optional<List<Training>>result = trainingService.getTrainerTrainings(username,fromDate,toDate,traineeName);
 
         assertTrue(result.isPresent());
-        assertEquals(1, result.get().size());
-        assertEquals("Morning Yoga", result.get().get(0).getTrainingName());
-
+        assertFalse(result.get().isEmpty());
+        assertEquals(training.getTrainingName(), result.get().get(0).getTrainingName());
     }
-    @Test
-    public void testGetAllTrainingTypes() {
-        when(trainingDAO.getDistinctTrainingTypes()).thenReturn(List.of("Yoga", "Pilates"));
-
-        List<String> result = trainingService.getAllTrainingTypes();
-
-        assertEquals(2, result.size());
-        assertTrue(result.contains("Yoga"));
-        assertTrue(result.contains("Pilates"));
-    }
-
-
-   }
+}

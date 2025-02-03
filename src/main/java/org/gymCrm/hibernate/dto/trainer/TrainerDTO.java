@@ -20,8 +20,6 @@ public class TrainerDTO {
     @NotBlank(message = "Last name is required")
     private String lastName;
 
-    @NotBlank(message = "Specialization is required")
     private TrainingType specialization;
-
 
 }

@@ -1,13 +1,10 @@
 package org.gymCrm.hibernate.model;
 
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import javax.persistence.*;
-
-import static javax.persistence.GenerationType.IDENTITY;
 
 @Data
 @AllArgsConstructor
@@ -19,7 +16,7 @@ import static javax.persistence.GenerationType.IDENTITY;
 public abstract class User {
 
     @Id
-    @GeneratedValue(strategy = IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id")
     private int id;
 
@@ -39,7 +36,7 @@ public abstract class User {
     @Column(name = "password")
     private String password;
 
-    @Column(name = "isActive")
+    @Column(name = "isActive",nullable = true)
     private boolean isActive;
 }
 

@@ -1,5 +1,6 @@
 package org.gymCrm.hibernate.model;
 
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
 import lombok.AllArgsConstructor;
@@ -7,8 +8,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
-import javax.persistence.*;
+
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.Set;
 
 @Data
@@ -25,18 +27,20 @@ public class Trainee extends User {
     private LocalDate birthDate;
 
     @NotNull(message = "Address cannot be null")
+
     @Embedded
-    @Column(name="address")
     private Address address;
 
-    @ManyToMany(mappedBy = "trainees",fetch = FetchType.EAGER)
-    @Column(name = "trainer_id")
-    private Set<Trainer> trainers;
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "training",
+            joinColumns = @JoinColumn(name = "trainee_id"),
+            inverseJoinColumns = @JoinColumn(name = "trainer_id")
+    )
+    private Set<Trainer> trainers=new HashSet<>();
 
-    @NotNull(message = "Training cannot be null")
-    @ManyToOne(cascade =CascadeType. ALL)
-    @JoinColumn(name = "training_id")
-    private Training training;
 
+    @OneToMany(mappedBy = "trainee",cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private Set<Training> trainings = new HashSet<>();
 
 }

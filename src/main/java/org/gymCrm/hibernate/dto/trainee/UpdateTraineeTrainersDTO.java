@@ -4,7 +4,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
 
-import javax.xml.transform.Source;
 import java.util.List;
 
 @Data
@@ -14,4 +13,15 @@ public class UpdateTraineeTrainersDTO{
 
     @NotEmpty(message = "Trainer list cannot be empty")
     private List<String> trainerUsernames;
+
+    public UpdateTraineeTrainersDTO() {}
+
+    public UpdateTraineeTrainersDTO(String traineeUsername, List<String> trainerUsernames) {
+        this.traineeUsername = traineeUsername;
+        this.trainerUsernames = trainerUsernames;
+    }
+
+    public UpdateTraineeTrainersDTO(List<String> trainerUsernames) {
+        this.trainerUsernames = trainerUsernames;
+    }
 }

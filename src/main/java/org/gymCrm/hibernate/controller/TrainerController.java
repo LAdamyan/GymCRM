@@ -1,9 +1,10 @@
 package org.gymCrm.hibernate.controller;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,11 +12,12 @@ import org.gymCrm.hibernate.dto.trainer.ActiveTrainerDTO;
 import org.gymCrm.hibernate.dto.trainer.TrainerDTO;
 import org.gymCrm.hibernate.dto.trainer.TrainerProfileDTO;
 import org.gymCrm.hibernate.dto.trainer.UpdateTrainerDTO;
-import org.gymCrm.hibernate.dto.training.TrainingTypeDTO;
 import org.gymCrm.hibernate.model.Trainer;
 import org.gymCrm.hibernate.model.TrainingType;
-import org.gymCrm.hibernate.service.TrainerService;
+import org.gymCrm.hibernate.repo.TrainerRepository;
+import org.gymCrm.hibernate.service.impl.TrainerServiceImpl;
 import org.gymCrm.hibernate.service.UserDetailsService;
+import org.gymCrm.hibernate.util.UserCredentialsUtil;
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,16 +25,15 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
 @RequestMapping("/trainers")
 @RequiredArgsConstructor
-@Api(value = "Trainer Management System", tags = {"Trainers"})
 public class TrainerController {
 
-    private final TrainerService trainerService;
+
+    private final TrainerServiceImpl trainerServiceImpl;
     private final UserDetailsService<Trainer> userDetailsService;
 
     private void authenticate(String username, String password) {
@@ -43,10 +44,10 @@ public class TrainerController {
         log.info("Authentication successful for user: {}", username);
     }
 
-    @ApiOperation(value = "Register a new trainer", response = Map.class)
+    @Operation(summary = "Register a new trainer", description = "Registers a new trainer.")
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Trainer successfully registered"),
-            @ApiResponse(code = 400, message = "Invalid input")
+            @ApiResponse(responseCode = "200", description = "Trainer successfully registered"),
+            @ApiResponse(responseCode = "400", description = "Invalid input")
     })
     @PostMapping
     public ResponseEntity<Map<String, String>> registerTrainer(@RequestBody @Valid TrainerDTO trainerDTO) {
@@ -56,9 +57,12 @@ public class TrainerController {
         Trainer trainer = new Trainer();
         trainer.setFirstName(trainerDTO.getFirstName());
         trainer.setLastName(trainerDTO.getLastName());
-        trainer.setActive(true);
 
-        trainerService.saveTrainer(trainer);
+        if (trainerDTO.getSpecialization() != null) {
+            trainer.setSpecialization(trainerDTO.getSpecialization());
+        }
+
+        trainerServiceImpl.create(trainer);
 
         Map<String, String> response = new HashMap<>();
         response.put("username", trainer.getUsername());
@@ -68,10 +72,10 @@ public class TrainerController {
 
     }
 
-    @ApiOperation(value = "Get trainer profile", response = TrainerProfileDTO.class)
+    @Operation(summary = "Get trainer profile", description = "Retrieves the profile of a trainer by their username.")
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Trainer profile retrieved successfully"),
-            @ApiResponse(code = 404, message = "Trainer not found")
+            @ApiResponse(responseCode = "200", description = "Trainer profile retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Trainer not found")
     })
     @GetMapping("/{username}")
     public ResponseEntity<TrainerProfileDTO> getTrainerProfile(
@@ -83,16 +87,15 @@ public class TrainerController {
         log.info("[{}] GET /trainers/{} called", transactionId, username);
         authenticate(authUsername, authPassword);
 
-        Optional<Trainer> optionalTrainer = trainerService.getTrainerByUsername(username);
-        return optionalTrainer.map(trainer -> ResponseEntity.ok
-                (new TrainerProfileDTO(trainer))).orElseGet(() ->
-                ResponseEntity.notFound().build());
+        Optional<Trainer> trainer = trainerServiceImpl.selectByUsername(username);
+        return trainer.map(t -> ResponseEntity.ok(new TrainerProfileDTO(t)))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    @ApiOperation(value = "Update trainer profile", response = TrainerProfileDTO.class)
+    @Operation(summary = "Update trainer profile", description = "Updates the profile of a trainer by their username.")
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Trainer profile updated successfully"),
-            @ApiResponse(code = 404, message = "Trainer not found")
+            @ApiResponse(responseCode = "200", description = "Trainer profile updated successfully"),
+            @ApiResponse(responseCode = "404", description = "Trainer not found")
     })
     @PutMapping("/{username}")
     public ResponseEntity<TrainerProfileDTO> updateTrainerProfile(
@@ -105,7 +108,7 @@ public class TrainerController {
 
         authenticate(authUsername, authPassword);
 
-        Optional<Trainer> updatedTrainerOpt = trainerService.updateTrainer(username, updateDTO);
+        Optional<Trainer> updatedTrainerOpt = trainerServiceImpl.updateTrainer(username, updateDTO);
 
         if (updatedTrainerOpt.isPresent()) {
             log.info("[{}] Trainer profile updated successfully for username: {}", transactionId, username);
@@ -115,10 +118,10 @@ public class TrainerController {
         return ResponseEntity.notFound().build();
     }
 
-    @ApiOperation(value = "Change trainer active status")
+    @Operation(summary = "Change trainer active status", description = "Updates the active status of a trainer.")
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Trainer status updated successfully"),
-            @ApiResponse(code = 404, message = "Trainer not found")
+            @ApiResponse(responseCode = "200", description = "Trainer status updated successfully"),
+            @ApiResponse(responseCode = "404", description = "Trainer not found")
     })
     @PatchMapping("/{username}/status")
     public ResponseEntity<Void> changeTrainerStatus(
@@ -131,18 +134,18 @@ public class TrainerController {
 
         authenticate(authUsername, authPassword);
         String transactionId = MDC.get("transactionId");
-        log.info("[{}] PATCH /trainers/{}/status called with isActive: {}", transactionId, username, isActive);
+        log.info("[{}] PATCH /trainers/{}/status called with isActive: {}", transactionId, username);
 
-        trainerService.changeTrainerActiveStatus(username, password, isActive);
-        log.info("[{}] Trainer status changed to {} for username: {}", transactionId, isActive, username);
+        trainerServiceImpl.changeTrainerActiveStatus(username, password,isActive);
+        log.info("[{}] Trainer status changed to {} for username: {}", transactionId, username);
         return ResponseEntity.ok().build();
     }
 
-    @ApiOperation(value = "Get not assigned active trainers for a trainee", response = TrainerDTO.class, responseContainer = "List")
+    @Operation(summary = "Get not assigned active trainers for a trainee", description = "Retrieves trainers not assigned to the specified trainee.")
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Successfully retrieved list of not assigned active trainers"),
-            @ApiResponse(code = 404, message = "Trainee not found"),
-            @ApiResponse(code = 500, message = "Internal server error")
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved list of unassigned active trainers"),
+            @ApiResponse(responseCode = "404", description = "Trainee not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @GetMapping("/{username}/not-assigned-trainers")
     public ResponseEntity<List<ActiveTrainerDTO>> getUnassignedActiveTrainers(
@@ -154,7 +157,7 @@ public class TrainerController {
         log.info("[{}] GET /trainees/{}/not-assigned-trainers called", transactionId, username);
         authenticate(authUsername, authPassword);
 
-        Optional<List<Trainer>> trainersOptional = trainerService.getUnassignedTrainers(username);
+        Optional<List<Trainer>> trainersOptional = trainerServiceImpl.getUnassignedTrainers(username);
 
         if (trainersOptional.isEmpty() || trainersOptional.get().isEmpty()) {
             log.warn("[{}] No unassigned trainers found for trainee: {}", transactionId, username);
@@ -165,7 +168,7 @@ public class TrainerController {
                         trainer.getUsername(),
                         trainer.getFirstName(),
                         trainer.getLastName(),
-                        new TrainingType(trainer.getSpecialization()))
+                        new TrainingType(trainer.getSpecialization().getTypeName()))
                 ).toList();
         log.info("[{}] Successfully retrieved unassigned active trainers for trainee: {}", transactionId, username);
         return ResponseEntity.ok(activeTrainerDTOs);

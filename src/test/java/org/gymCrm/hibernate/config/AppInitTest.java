@@ -1,32 +1,34 @@
 package org.gymCrm.hibernate.config;
 
+import org.gymCrm.hibernate.GymCrmApplication;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.builder.SpringApplicationBuilder;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class AppInitTest {
 
-    private final AppInit appInit = new AppInit();
 
-    @Test
-    void testGetRootConfigClasses() {
-        Class<?>[] rootConfigClasses = appInit.getRootConfigClasses();
-        assertNull(rootConfigClasses, "Root configuration classes should be null");
+    private AppInit appInit;
+
+    @BeforeEach
+    void setUp() {
+        appInit = new AppInit();
     }
 
     @Test
-    void testGetServletConfigClasses() {
-        Class<?>[] servletConfigClasses = appInit.getServletConfigClasses();
-        assertNotNull(servletConfigClasses, "Servlet configuration classes should not be null");
-        assertEquals(1, servletConfigClasses.length, "There should be exactly one servlet configuration class");
-        assertEquals(AppConfig.class, servletConfigClasses[0], "The servlet configuration class should be AppConfig");
-    }
+    void testConfigure() {
+        SpringApplicationBuilder builder = mock(SpringApplicationBuilder.class);
+        when(builder.sources(GymCrmApplication.class)).thenReturn(builder);
 
-    @Test
-    void testGetServletMappings() {
-        String[] servletMappings = appInit.getServletMappings();
-        assertNotNull(servletMappings, "Servlet mappings should not be null");
-        assertEquals(1, servletMappings.length, "There should be exactly one servlet mapping");
-        assertEquals("/", servletMappings[0], "The servlet mapping should be '/'");
+        SpringApplicationBuilder result = appInit.configure(builder);
+
+        assertNotNull(result);
+        verify(builder, times(1)).sources(GymCrmApplication.class);
     }
 }

@@ -1,6 +1,9 @@
 package org.gymCrm.hibernate.model;
 
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
+import jakarta.persistence.Entity;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -8,8 +11,7 @@ import lombok.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import javax.persistence.Column;
-import javax.persistence.Embeddable;
+
 import javax.xml.transform.Source;
 
 @Data
