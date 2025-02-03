@@ -1,14 +1,11 @@
 package org.gymCrm.hibernate.service.impl;
 
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.NoResultException;
 import lombok.extern.slf4j.Slf4j;
 import org.gymCrm.hibernate.endpoint.CustomMetrics;
 import org.gymCrm.hibernate.model.Trainee;
 import org.gymCrm.hibernate.model.Trainer;
-import org.gymCrm.hibernate.model.User;
 import org.gymCrm.hibernate.repo.TraineeRepository;
-import org.gymCrm.hibernate.repo.UserRepository;
 import org.gymCrm.hibernate.service.TraineeService;
 import org.gymCrm.hibernate.service.UserDetailsService;
 import org.gymCrm.hibernate.util.UserCredentialsUtil;
@@ -28,8 +25,8 @@ public class TraineeServiceImpl implements TraineeService {
     private final UserCredentialsUtil userCredentialsUtil;
 
     private final UserDetailsService<Trainee> userDetailsService;
-    private final CustomMetrics customMetrics;
 
+    private final CustomMetrics customMetrics;
 
 
     public TraineeServiceImpl(TraineeRepository traineeRepository, UserCredentialsUtil userCredentialsUtil, UserDetailsService<Trainee> userDetailsService, CustomMetrics customMetrics) {

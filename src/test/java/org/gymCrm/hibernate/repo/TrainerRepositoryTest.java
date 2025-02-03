@@ -1,6 +1,7 @@
 package org.gymCrm.hibernate.repo;
 
-import org.gymCrm.hibernate.model.Address;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.gymCrm.hibernate.model.Trainee;
 import org.gymCrm.hibernate.model.Trainer;
 import org.gymCrm.hibernate.model.TrainingType;
@@ -14,7 +15,6 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import java.time.LocalDate;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;

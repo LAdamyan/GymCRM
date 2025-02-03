@@ -3,7 +3,6 @@ package org.gymCrm.hibernate.service.impl;
 import lombok.extern.slf4j.Slf4j;
 import org.gymCrm.hibernate.model.User;
 import org.gymCrm.hibernate.repo.UserRepository;
-import org.gymCrm.hibernate.service.UserDetailsService;
 import org.gymCrm.hibernate.service.UserService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

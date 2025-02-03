@@ -1,10 +1,8 @@
 package org.gymCrm.hibernate.controller;
 
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,10 +12,8 @@ import org.gymCrm.hibernate.dto.trainer.TrainerProfileDTO;
 import org.gymCrm.hibernate.dto.trainer.UpdateTrainerDTO;
 import org.gymCrm.hibernate.model.Trainer;
 import org.gymCrm.hibernate.model.TrainingType;
-import org.gymCrm.hibernate.repo.TrainerRepository;
-import org.gymCrm.hibernate.service.impl.TrainerServiceImpl;
 import org.gymCrm.hibernate.service.UserDetailsService;
-import org.gymCrm.hibernate.util.UserCredentialsUtil;
+import org.gymCrm.hibernate.service.impl.TrainerServiceImpl;
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -42,6 +38,16 @@ public class TrainerController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid username or password");
         }
         log.info("Authentication successful for user: {}", username);
+    }
+
+    @GetMapping("/{username}/exists")
+    public ResponseEntity<String> checkTrainerExists(@PathVariable String username) {
+        boolean exists = trainerServiceImpl.doesTrainerExist(username);
+        if (exists) {
+            return ResponseEntity.ok("Trainer exists.");
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Trainer not found.");
+        }
     }
 
     @Operation(summary = "Register a new trainer", description = "Registers a new trainer.")
@@ -136,7 +142,7 @@ public class TrainerController {
         String transactionId = MDC.get("transactionId");
         log.info("[{}] PATCH /trainers/{}/status called with isActive: {}", transactionId, username);
 
-        trainerServiceImpl.changeTrainerActiveStatus(username, password,isActive);
+        trainerServiceImpl.changeTrainerActiveStatus(username, password, isActive);
         log.info("[{}] Trainer status changed to {} for username: {}", transactionId, username);
         return ResponseEntity.ok().build();
     }

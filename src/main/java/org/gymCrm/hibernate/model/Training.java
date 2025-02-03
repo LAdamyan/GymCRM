@@ -5,10 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-
 import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
 
 import static jakarta.persistence.GenerationType.IDENTITY;
 
@@ -24,13 +21,13 @@ public class Training {
     @Column(name = "id")
     private int id;
 
-
+    @NotNull(message = "Training name cannot be null")
     @Column(name = "training_name", nullable = false)
     private String trainingName;
 
-    @NotNull(message = "Training type cannot be null")
+
     @ManyToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "training_type_id")
+    @JoinColumn(name = "training_type_id",nullable = false)
     private TrainingType trainingType;
 
     @NotNull(message = "Training date cannot be null")
@@ -46,7 +43,7 @@ public class Training {
     private Trainee trainee;
 
     @ManyToOne
-    @JoinColumn(name = "trainer_id")
+    @JoinColumn(name = "trainer_id",nullable = false)
     private Trainer trainer;
 
 

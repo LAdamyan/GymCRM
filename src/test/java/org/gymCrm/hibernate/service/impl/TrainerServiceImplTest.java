@@ -1,6 +1,5 @@
 package org.gymCrm.hibernate.service.impl;
 
-import org.gymCrm.hibernate.model.Trainee;
 import org.gymCrm.hibernate.model.Trainer;
 import org.gymCrm.hibernate.model.TrainingType;
 import org.gymCrm.hibernate.repo.TrainerRepository;
@@ -9,12 +8,12 @@ import org.gymCrm.hibernate.util.UserCredentialsUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
-import org.springframework.data.geo.CustomMetric;
 
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;

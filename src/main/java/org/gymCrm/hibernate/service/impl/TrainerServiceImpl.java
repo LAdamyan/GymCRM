@@ -2,7 +2,6 @@ package org.gymCrm.hibernate.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import org.gymCrm.hibernate.dto.trainer.UpdateTrainerDTO;
-import org.gymCrm.hibernate.model.Trainee;
 import org.gymCrm.hibernate.model.Trainer;
 import org.gymCrm.hibernate.repo.TrainerRepository;
 import org.gymCrm.hibernate.service.TrainerService;
@@ -27,6 +26,10 @@ public class TrainerServiceImpl implements TrainerService {
         this.trainerRepository = trainerRepository;
         this.userCredentialsUtil = userCredentialsUtil;
         this.userDetailsService = userDetailsService;
+    }
+
+    public boolean doesTrainerExist(String username) {
+        return trainerRepository.findByUsername(username).isPresent();
     }
 
     @Transactional

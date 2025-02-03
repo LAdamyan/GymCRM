@@ -7,7 +7,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.gymCrm.hibernate.dto.address.AddressDTO;
@@ -15,20 +14,18 @@ import org.gymCrm.hibernate.dto.trainee.TraineeDTO;
 import org.gymCrm.hibernate.dto.trainee.TraineeProfileDTO;
 import org.gymCrm.hibernate.dto.trainee.UpdateTraineeTrainersDTO;
 import org.gymCrm.hibernate.dto.trainer.TrainerDTO;
-import org.gymCrm.hibernate.endpoint.CustomMetrics;
 import org.gymCrm.hibernate.model.Address;
 import org.gymCrm.hibernate.model.Trainee;
 import org.gymCrm.hibernate.model.Trainer;
 import org.gymCrm.hibernate.model.TrainingType;
 import org.gymCrm.hibernate.repo.TrainerRepository;
-import org.gymCrm.hibernate.service.impl.TraineeServiceImpl;
 import org.gymCrm.hibernate.service.UserDetailsService;
+import org.gymCrm.hibernate.service.impl.TraineeServiceImpl;
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -78,18 +75,13 @@ public class TraineeController {
         trainee.setAddress(address);
         trainee.setActive(true);
 
-        try {
+        traineeServiceImpl.create(trainee);
 
-            Map<String, String> response = new HashMap<>();
-            response.put("username", trainee.getUsername());
-            response.put("password", trainee.getPassword());
-            log.info("[{}] Trainee registered successfully with username: {}", transactionId, trainee.getUsername());
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            log.error("[{}] Error registering trainee: {}", transactionId, e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Collections.singletonMap("message", "Registration failed"));
-        }
+        Map<String, String> response = new HashMap<>();
+        response.put("username", trainee.getUsername());
+        response.put("password", trainee.getPassword());
+        log.info("[{}] Trainee registered successfully with username: {}", transactionId, trainee.getUsername());
+        return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "Get trainee profile", description = "Retrieves the profile of a trainee by their username.")

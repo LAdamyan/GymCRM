@@ -7,8 +7,6 @@ import org.gymCrm.hibernate.repo.UserRepository;
 import org.gymCrm.hibernate.service.UserDetailsService;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
 @Primary
 @Slf4j
 @Service

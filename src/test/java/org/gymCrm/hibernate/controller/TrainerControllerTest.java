@@ -1,38 +1,24 @@
 package org.gymCrm.hibernate.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gymCrm.hibernate.dto.trainer.ActiveTrainerDTO;
-import org.gymCrm.hibernate.dto.trainer.TrainerDTO;
 import org.gymCrm.hibernate.dto.trainer.TrainerProfileDTO;
-import org.gymCrm.hibernate.dto.trainer.UpdateTrainerDTO;
 import org.gymCrm.hibernate.model.Trainer;
-import org.gymCrm.hibernate.service.TrainerService;
 import org.gymCrm.hibernate.service.UserDetailsService;
-import org.gymCrm.hibernate.service.impl.TraineeServiceImpl;
 import org.gymCrm.hibernate.service.impl.TrainerServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
-import static org.springframework.http.RequestEntity.post;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 
 class TrainerControllerTest {

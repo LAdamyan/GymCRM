@@ -1,5 +1,6 @@
 package org.gymCrm.hibernate.repo;
 
+import org.gymCrm.hibernate.model.Trainer;
 import org.gymCrm.hibernate.model.Training;
 import org.gymCrm.hibernate.model.TrainingType;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,11 +24,21 @@ class TrainingRepositoryTest {
 
     @Autowired
     private TrainingRepository trainingRepository;
+
+    @Autowired
+    private TrainerRepository trainerRepository;
+
+    private Trainer trainer;
     private TrainingType trainingType;
     private Training training;
 
     @BeforeEach
     void setUp() {
+        trainer = new Trainer();
+        trainer.setUsername("Tom.Hanks");
+        trainer.setFirstName("Tom");
+        trainer.setLastName("Hanks");
+        trainerRepository.save(trainer);
 
         trainingType = new TrainingType();
         trainingType.setTypeName("CARDIO");
@@ -37,6 +48,7 @@ class TrainingRepositoryTest {
         training.setTrainingType(trainingType);
         training.setTrainingDate(new Date());
         training.setDuration(60);
+        training.setTrainer(trainer);
 
         trainingRepository.save(training);
     }
@@ -60,6 +72,7 @@ class TrainingRepositoryTest {
                 trainingType.getTypeName());
 
         assertNotNull(traineeTrainings);
+        assertFalse(traineeTrainings.isEmpty());
 
     }
 }

@@ -3,7 +3,6 @@ package org.gymCrm.hibernate.config;
 import org.gymCrm.hibernate.GymCrmApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
-import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatcherServletInitializer;
 
 public class AppInit extends SpringBootServletInitializer {
 

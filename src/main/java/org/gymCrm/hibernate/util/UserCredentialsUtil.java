@@ -2,7 +2,6 @@ package org.gymCrm.hibernate.util;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
-
 import org.gymCrm.hibernate.repo.UserRepository;
 import org.springframework.stereotype.Component;
 

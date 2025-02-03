@@ -1,12 +1,10 @@
 package org.gymCrm.hibernate.model;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-
 
 import java.util.HashSet;
 import java.util.Objects;
@@ -23,7 +21,8 @@ import java.util.Set;
 @DiscriminatorValue("TRAINER")
 public class Trainer extends User {
 
-    @ManyToOne@JoinColumn(name = "training_type_id")
+    @ManyToOne
+    @JoinColumn(name = "training_type_id",nullable = false)
     private TrainingType specialization;
 
     @ManyToMany(mappedBy = "trainers", fetch = FetchType.EAGER)

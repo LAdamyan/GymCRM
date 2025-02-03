@@ -6,61 +6,48 @@ import org.gymCrm.hibernate.model.Trainee;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class TraineeProfileDTOTest {
 
-//    @Test
-//    void testTraineeProfileDTOConstructorWithTrainee() {
-//        // Arrange
-//        Trainee trainee = new Trainee("username123", "John", "Doe", LocalDate.of(2000, 1, 1));
-//
-//        // Act
-//        TraineeProfileDTO traineeProfileDTO = new TraineeProfileDTO(trainee);
-//
-//        // Assert
-//        assertEquals(trainee.getUsername(), traineeProfileDTO.getUsername(), "Username should match");
-//        assertEquals(trainee.getFirstName(), traineeProfileDTO.getFirstName(), "First name should match");
-//        assertEquals(trainee.getLastName(), traineeProfileDTO.getLastName(), "Last name should match");
-//        assertNull(traineeProfileDTO.getBirthDate(), "BirthDate should be null as it's not initialized in the constructor");
-//        assertNull(traineeProfileDTO.getAddress(), "Address should be null");
-//        assertFalse(traineeProfileDTO.isActive(), "isActive should be false by default");
-//        assertTrue(traineeProfileDTO.getTrainers().isEmpty(), "Trainers list should be empty by default");
-//    }
-
     @Test
-    void testTraineeProfileDTOConstructorWithFullFields() {
-        // Arrange
-        AddressDTO address = new AddressDTO("123 Street", "City", "State", "12345");
-        TrainerSummaryDTO trainer = new TrainerSummaryDTO("trainer1");
-        TraineeProfileDTO traineeProfileDTO = new TraineeProfileDTO("username123", "John", "Doe",
-                LocalDate.of(2000, 1, 1), address, true, Collections.singletonList(trainer));
-
-        // Act and Assert
-        assertEquals("username123", traineeProfileDTO.getUsername());
-        assertEquals("John", traineeProfileDTO.getFirstName());
-        assertEquals("Doe", traineeProfileDTO.getLastName());
-        assertEquals(LocalDate.of(2000, 1, 1), traineeProfileDTO.getBirthDate());
-        assertEquals(address, traineeProfileDTO.getAddress());
-        assertTrue(traineeProfileDTO.isActive());
-        assertEquals(1, traineeProfileDTO.getTrainers().size());
-        assertEquals("trainer1", traineeProfileDTO.getTrainers().get(0).getUsername());
+    void testDefaultConstructor() {
+        TraineeProfileDTO profileDTO = new TraineeProfileDTO();
+        assertNull(profileDTO.getUsername());
+        assertNull(profileDTO.getFirstName());
+        assertNull(profileDTO.getLastName());
+        assertNull(profileDTO.getBirthDate());
+        assertNull(profileDTO.getAddress());
+        assertFalse(profileDTO.isActive());
+        assertNull(profileDTO.getTrainers());
     }
-
     @Test
-    void testTraineeProfileDTOEmptyConstructor() {
-        // Act
-        TraineeProfileDTO traineeProfileDTO = new TraineeProfileDTO();
+    void testAllArgsConstructor() {
+        TraineeProfileDTO profileDTO = new TraineeProfileDTO("lil.adamyan", "Lil", "Adamyan",
+                LocalDate.of(2000, 1, 1), new AddressDTO(), true, new ArrayList<>());
 
-        // Assert
-        assertNull(traineeProfileDTO.getUsername(), "Username should be null");
-        assertNull(traineeProfileDTO.getFirstName(), "First name should be null");
-        assertNull(traineeProfileDTO.getLastName(), "Last name should be null");
-        assertNull(traineeProfileDTO.getBirthDate(), "Birth date should be null");
-        assertNull(traineeProfileDTO.getAddress(), "Address should be null");
-        assertFalse(traineeProfileDTO.isActive(), "isActive should default to false");
-        assertTrue(traineeProfileDTO.getTrainers().isEmpty(), "Trainers list should be empty");
+        assertEquals("lil.adamyan", profileDTO.getUsername());
+        assertEquals("Lil", profileDTO.getFirstName());
+        assertEquals("Adamyan", profileDTO.getLastName());
+        assertEquals(LocalDate.of(2000, 1, 1), profileDTO.getBirthDate());
+        assertNotNull(profileDTO.getAddress());
+        assertTrue(profileDTO.isActive());
+        assertNotNull(profileDTO.getTrainers());
+    }
+    @Test
+    void testConstructorFromTrainee() {
+        Trainee trainee = new Trainee();
+        trainee.setUsername("lil.adamyan");
+        trainee.setFirstName("Lil");
+        trainee.setLastName("Adamyan");
+
+        TraineeProfileDTO profileDTO = new TraineeProfileDTO(trainee);
+
+        assertEquals("lil.adamyan", profileDTO.getUsername());
+        assertEquals("Lil", profileDTO.getFirstName());
+        assertEquals("Adamyan", profileDTO.getLastName());
     }
 }
