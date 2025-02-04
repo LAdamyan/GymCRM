@@ -40,7 +40,7 @@ class CustomMetricsTest {
     void testInitializeTraineeCount() {
         when(traineeRepository.count()).thenReturn(5L);
 
-        CustomMetrics metrics = new CustomMetrics(meterRegistry, traineeRepository);
+
 
         verify(traineeCountCounter, times(5)).increment();
     }

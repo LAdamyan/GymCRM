@@ -26,14 +26,14 @@ public class TraineeServiceImpl implements TraineeService {
 
     private final UserDetailsService<Trainee> userDetailsService;
 
-    private final CustomMetrics customMetrics;
+
 
 
     public TraineeServiceImpl(TraineeRepository traineeRepository, UserCredentialsUtil userCredentialsUtil, UserDetailsService<Trainee> userDetailsService, CustomMetrics customMetrics) {
         this.traineeRepository = traineeRepository;
         this.userCredentialsUtil = userCredentialsUtil;
         this.userDetailsService = userDetailsService;
-        this.customMetrics = customMetrics;
+
     }
 
     @Transactional
@@ -55,7 +55,6 @@ public class TraineeServiceImpl implements TraineeService {
                 log.info("Generated new username '{}' and password for the trainee.", username);
             }
             traineeRepository.save(trainee);
-            customMetrics.incrementTraineeRegistration();
             log.info("Trainee saved successfully with username: {}", username);
         } catch (Exception e) {
             log.error("Error while creating trainee", e);

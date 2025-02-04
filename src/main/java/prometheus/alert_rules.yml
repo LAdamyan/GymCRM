@@ -1,0 +1,19 @@
+groups:
+  - name: TrainingAlerts
+    rules:
+      - alert: LowTrainingTypes
+        expr: training_types_count < 10
+        labels:
+          severity: warning
+        annotations:
+          summary: "Training Types Are Low"
+          description: "The number of training types is below 10!"
+
+      - alert: HighTraineeRegistrations
+        expr: trainee_registration_count > 100
+        for: 5m
+        labels:
+          severity: info
+        annotations:
+          summary: "High Trainee Registrations"
+          description: "More than 100 trainees have registered in the last 5 minutes."

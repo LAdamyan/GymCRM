@@ -16,21 +16,16 @@ public class CustomDatabaseHealthIndicator implements HealthIndicator {
     @Override
     public Health health() {
         try {
-            if (isDatabaseHealthy()) {
-                return Health.up().withDetail("database", "Database is up and running").build();
-            } else {
-                return Health.down().withDetail("database", "Database is down").build();
-            }
+            entityManager.createNativeQuery("SELECT 1").getSingleResult();
+            return Health.up().
+                    withDetail("database", "Database is up and running").build();
         } catch (Exception e) {
-            return Health.down(e).withDetail("database", "Database check failed").build();
+            return Health.down()
+                    .withDetail("database", "Database connection failed")
+                    .withDetail("error", e.getMessage())
+                    .build();
         }
     }
 
-    private boolean isDatabaseHealthy() {
-        try {
-            return entityManager.createNativeQuery("SELECT 1").getSingleResult() != null;
-        } catch (Exception e) {
-            return false;
-        }
-    }
+
 }
