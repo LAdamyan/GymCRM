@@ -6,14 +6,16 @@ import org.gymCrm.hibernate.endpoint.CustomMetrics;
 import org.gymCrm.hibernate.model.Trainee;
 import org.gymCrm.hibernate.model.Trainer;
 import org.gymCrm.hibernate.repo.TraineeRepository;
+import org.gymCrm.hibernate.util.AuthenticationService;
 import org.gymCrm.hibernate.service.TraineeService;
-import org.gymCrm.hibernate.service.UserDetailsService;
 import org.gymCrm.hibernate.util.UserCredentialsUtil;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
@@ -24,39 +26,43 @@ public class TraineeServiceImpl implements TraineeService {
 
     private final UserCredentialsUtil userCredentialsUtil;
 
-    private final UserDetailsService<Trainee> userDetailsService;
+    private final AuthenticationService authenticationService;
+    private final PasswordEncoder passwordEncoder;
 
-    private final CustomMetrics customMetrics;
 
-
-    public TraineeServiceImpl(TraineeRepository traineeRepository, UserCredentialsUtil userCredentialsUtil, UserDetailsService<Trainee> userDetailsService, CustomMetrics customMetrics) {
+    public TraineeServiceImpl(TraineeRepository traineeRepository, UserCredentialsUtil userCredentialsUtil, AuthenticationService authenticationService, CustomMetrics customMetrics, PasswordEncoder passwordEncoder) {
         this.traineeRepository = traineeRepository;
         this.userCredentialsUtil = userCredentialsUtil;
-        this.userDetailsService = userDetailsService;
-        this.customMetrics = customMetrics;
+        this.authenticationService = authenticationService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional
     @Override
-    public void create(Trainee trainee) {
+    public Map<String, String> create(Trainee trainee) {
         log.info("Saving trainee: {}", trainee);
         try {
             String username = UserCredentialsUtil.generateUsername(trainee.getFirstName(), trainee.getLastName());
             Optional<Trainee> existingTrainee = traineeRepository.findByUsername(username);
 
             if (existingTrainee.isPresent()) {
-                Trainee existing = existingTrainee.get();
-                trainee.setUsername(existing.getUsername());
-                trainee.setPassword(existing.getPassword());
-                log.info("Trainee with username '{}' already exists. Using existing credentials.", username);
+                log.debug("Trainee with username '{}' already exists.", username);
+                return Map.of("message", "Trainee already exists", "username", username);
             } else {
                 trainee.setUsername(username);
-                trainee.setPassword(userCredentialsUtil.generatePassword());
-                log.info("Generated new username '{}' and password for the trainee.", username);
+                // Generate a raw password
+                String rawPassword = UserCredentialsUtil.generatePassword();
+
+                // Encode the password for DB storage
+                String encodedPassword = passwordEncoder.encode(rawPassword);
+                trainee.setPassword(encodedPassword);
+
+                traineeRepository.save(trainee);
+                log.debug("Trainee saved successfully with username: {}", username);
+
+                // Return raw password to user
+                return Map.of("username", username, "password", rawPassword);
             }
-            traineeRepository.save(trainee);
-            customMetrics.incrementTraineeRegistration();
-            log.info("Trainee saved successfully with username: {}", username);
         } catch (Exception e) {
             log.error("Error while creating trainee", e);
             throw e;
@@ -67,7 +73,7 @@ public class TraineeServiceImpl implements TraineeService {
     @Override
     public void update(Trainee trainee,String username, String password) {
         log.info("Updating trainee: {}", trainee);
-        if (!userDetailsService.authenticate(trainee.getUsername(), password)) {
+        if (!authenticationService.authenticate(trainee.getUsername(), password)) {
             throw new SecurityException("User " + trainee.getUsername() + " not authenticated, permission denied!");
         }
         try {
@@ -86,7 +92,7 @@ public class TraineeServiceImpl implements TraineeService {
     @Override
     public void delete(String username, String password) {
         log.info("Deleting trainee with username {}", username);
-        if (!userDetailsService.authenticate(username, password)) {
+        if (!authenticationService.authenticate(username, password)) {
             throw new SecurityException("User " + username + " not authenticated, permission denied!");
         }
         try {
@@ -134,14 +140,14 @@ public class TraineeServiceImpl implements TraineeService {
     @Override
     public void changeTraineePassword(String username,String oldPassword, String newPassword) {
         log.info("Changing password for trainee with username {}", username);
-        if (!userDetailsService.authenticate(username, oldPassword)) {
+        if (!authenticationService.authenticate(username, oldPassword)) {
             throw new SecurityException("User " + username + " not authenticated, permission denied!");
         }
         try {
             Optional<Trainee> optionalTrainee = traineeRepository.findByUsername(username);
             optionalTrainee.ifPresentOrElse(
                     trainee -> {
-                        trainee.setPassword(newPassword);
+                        trainee.setPassword(passwordEncoder.encode(newPassword));
                         traineeRepository.save(trainee);
                         log.info("Password updated successfully for trainee: {}", username);
                     },
@@ -157,7 +163,7 @@ public class TraineeServiceImpl implements TraineeService {
     @Override
     public void changeTraineeActiveStatus(String username, String password,boolean isActive) {
         log.info("Changing active status of trainee with username {}", username);
-        if (!userDetailsService.authenticate(username, password)) {
+        if (!authenticationService.authenticate(username, password)) {
             throw new SecurityException("User " + username + " not authenticated, permission denied!");
         }
             Optional<Trainee> optionalTrainee = traineeRepository.findByUsername(username);

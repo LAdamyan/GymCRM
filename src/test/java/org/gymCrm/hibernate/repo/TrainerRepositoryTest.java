@@ -8,6 +8,7 @@ import org.gymCrm.hibernate.model.TrainingType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jdbc.EmbeddedDatabaseConnection;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -28,10 +29,15 @@ class TrainerRepositoryTest {
     @Autowired
     private TrainerRepository trainerRepository;
 
+    @Autowired
+    private TrainingTypeRepository trainingTypeRepository;
+
     private Trainer trainer;
 
     @BeforeEach
     void setUp() {
+        TrainingType specialization = new TrainingType("Cardio");
+        specialization = trainingTypeRepository.save(specialization);
         trainer = new Trainer();
         trainer.setId(1);
         trainer.setUsername("michael_j");
@@ -39,7 +45,7 @@ class TrainerRepositoryTest {
         trainer.setFirstName("Michael");
         trainer.setLastName("Johnson");
         trainer.setActive(true);
-        trainer.setSpecialization(new TrainingType("Cardio"));
+        trainer.setSpecialization(specialization);
 
         trainerRepository.save(trainer);
 
@@ -60,17 +66,9 @@ class TrainerRepositoryTest {
     }
     @Test
     void testSaveTrainer() {
-        Trainer newTrainer = new Trainer();
-        newTrainer.setId(2);
-        newTrainer.setUsername("sarah_b");
-        newTrainer.setPassword("strongPass456");
-        newTrainer.setFirstName("Sarah");
-        newTrainer.setLastName("Brown");
-        newTrainer.setActive(true);
-        newTrainer.setSpecialization(new TrainingType("Strength Training"));
 
-        Trainer savedTrainer = trainerRepository.save(newTrainer);
+        Trainer savedTrainer = trainerRepository.save(trainer);
         assertNotNull(savedTrainer);
-        assertEquals("sarah_b", savedTrainer.getUsername());
+        assertEquals("michael_j", savedTrainer.getUsername());
     }
 }

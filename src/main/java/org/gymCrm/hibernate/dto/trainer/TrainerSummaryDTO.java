@@ -14,4 +14,8 @@ public class TrainerSummaryDTO {
 
     public TrainerSummaryDTO(String trainer1) {
     }
+
+    public TrainerSummaryDTO() {
+
+    }
 }

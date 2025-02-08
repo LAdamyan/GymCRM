@@ -4,13 +4,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.gymCrm.hibernate.dto.trainer.UpdateTrainerDTO;
 import org.gymCrm.hibernate.model.Trainer;
 import org.gymCrm.hibernate.repo.TrainerRepository;
+import org.gymCrm.hibernate.util.AuthenticationService;
 import org.gymCrm.hibernate.service.TrainerService;
-import org.gymCrm.hibernate.service.UserDetailsService;
 import org.gymCrm.hibernate.util.UserCredentialsUtil;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 @Slf4j
 @Service
@@ -20,12 +22,15 @@ public class TrainerServiceImpl implements TrainerService {
 
     private final UserCredentialsUtil userCredentialsUtil;
 
-    private final UserDetailsService<Trainer> userDetailsService;
+    private final AuthenticationService authenticationService;
+    private final PasswordEncoder passwordEncoder;
 
-    public TrainerServiceImpl(TrainerRepository trainerRepository, UserCredentialsUtil userCredentialsUtil, UserDetailsService<Trainer> userDetailsService) {
+
+    public TrainerServiceImpl(TrainerRepository trainerRepository, UserCredentialsUtil userCredentialsUtil, AuthenticationService authenticationService, PasswordEncoder passwordEncoder) {
         this.trainerRepository = trainerRepository;
         this.userCredentialsUtil = userCredentialsUtil;
-        this.userDetailsService = userDetailsService;
+        this.authenticationService = authenticationService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public boolean doesTrainerExist(String username) {
@@ -33,26 +38,32 @@ public class TrainerServiceImpl implements TrainerService {
     }
 
     @Transactional
-    public void create(Trainer trainer) {
+    public Map<String,String> create(Trainer trainer) {
         log.info("Saving trainer: {}", trainer);
         try {
-            String username = userCredentialsUtil.generateUsername(trainer.getFirstName(), trainer.getLastName());
+            String username = UserCredentialsUtil.generateUsername(trainer.getFirstName(), trainer.getLastName());
             Optional<Trainer> existingTrainer = trainerRepository.findByUsername(username);
 
-            if (existingTrainer.isPresent()) {
-                Trainer existing = existingTrainer.get();
-                trainer.setUsername(existing.getUsername());
-                trainer.setPassword(existing.getPassword());
-                log.info("Trainer with username '{}' already exists. Using existing credentials.", username);
+             if (existingTrainer.isPresent()) {
+                log.info("Trainer with username '{}' already exists.", username);
+                return Map.of("message", "Trainer already exists", "username", username);
             } else {
                 trainer.setUsername(username);
-                trainer.setPassword(userCredentialsUtil.generatePassword());
-                log.info("Generated new username '{}' and password for the trainer.", username);
+                // Generate a raw password
+                String rawPassword = UserCredentialsUtil.generatePassword();
+
+                // Encode the password for DB storage
+                String encodedPassword = passwordEncoder.encode(rawPassword);
+                trainer.setPassword(encodedPassword);
+
+                trainerRepository.save(trainer);
+                log.info("Trainee saved successfully with username: {}", username);
+
+                // Return raw password to user
+                return Map.of("username", username, "password", rawPassword);
             }
-            trainerRepository.save(trainer);
-            log.info("Trainer saved successfully with username: {}", username);
         } catch (Exception e) {
-            log.error("Error while creating trainer", e);
+            log.error("Error while creating trainee", e);
             throw e;
         }
     }
@@ -60,7 +71,7 @@ public class TrainerServiceImpl implements TrainerService {
     @Transactional
     public void update(Trainer trainer,String username,String password) {
         log.info("Updating trainer: {}", trainer);
-        if (!userDetailsService.authenticate(trainer.getUsername(), password)) {
+        if (!authenticationService.authenticate(trainer.getUsername(), password)) {
             throw new SecurityException("User " + trainer.getUsername() + " not authenticated, permission denied!");
         }
         try {
@@ -104,14 +115,14 @@ public class TrainerServiceImpl implements TrainerService {
     @Transactional
     public void changeTrainersPassword(String username, String oldPassword,String newPassword) {
         log.info("Changing password for trainer with username: {}", username);
-        if (!userDetailsService.authenticate(username, oldPassword)) {
+        if (!authenticationService.authenticate(username, oldPassword)) {
             throw new SecurityException("Invalid username or password");
         }
         try {
             Optional<Trainer> trainerOptional = trainerRepository.findByUsername(username);
             trainerOptional.ifPresentOrElse(
                     trainer -> {
-                        trainer.setPassword(newPassword);
+                        trainer.setPassword(passwordEncoder.encode(newPassword));
                         trainerRepository.save(trainer);
                         log.info("Password updated successfully for trainer: {}", username);
                     },
@@ -126,7 +137,7 @@ public class TrainerServiceImpl implements TrainerService {
     @Transactional
     public void changeTrainerActiveStatus(String username,String password,boolean isActive) {
         log.info("Changing active status of trainer with username {}", username);
-        if (!userDetailsService.authenticate(username, password)) {
+        if (!authenticationService.authenticate(username, password)) {
             throw new SecurityException("User " + username + " not authenticated, permission denied!");
         }
         Optional<Trainer> optionalTrainer = trainerRepository.findByUsername(username);
@@ -150,7 +161,7 @@ public class TrainerServiceImpl implements TrainerService {
 
     @Override
     public Optional<List<Trainer>> getUnassignedTrainers(String traineeUsername,  String username, String password) {
-        if (!userDetailsService.authenticate(username, password)) {
+        if (!authenticationService.authenticate(username, password)) {
             throw new SecurityException("User " + username + " not authenticated, permission denied!");
         }
         log.info("Get unassigned trainers for trainee {} ", traineeUsername);
