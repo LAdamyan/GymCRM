@@ -1,14 +1,15 @@
 package org.gymCrm.hibernate.model;
 
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import javax.persistence.*;
 import java.util.Date;
-import java.util.Set;
 
-import static javax.persistence.GenerationType.IDENTITY;
+import static jakarta.persistence.GenerationType.IDENTITY;
+
+
 @Data
 @Entity
 @NoArgsConstructor
@@ -20,13 +21,13 @@ public class Training {
     @Column(name = "id")
     private int id;
 
-
+    @NotNull(message = "Training name cannot be null")
     @Column(name = "training_name", nullable = false)
     private String trainingName;
 
-    @NotNull(message = "Training type cannot be null")
+
     @ManyToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "training_type_id")
+    @JoinColumn(name = "training_type_id",nullable = false)
     private TrainingType trainingType;
 
     @NotNull(message = "Training date cannot be null")
@@ -36,16 +37,23 @@ public class Training {
     @Column(name = "duration")
     private int duration;
 
-    @OneToMany(mappedBy = "training", cascade = CascadeType.ALL)
-    private Set<Trainer> trainers;
 
-    @OneToMany(mappedBy = "training", cascade = CascadeType.ALL)
-    private Set<Trainee> trainees;
+    @ManyToOne
+    @JoinColumn(name = "trainee_id")
+    private Trainee trainee;
+
+    @ManyToOne
+    @JoinColumn(name = "trainer_id",nullable = false)
+    private Trainer trainer;
 
 
-    public Training(String trainingName, Date trainingDate, int duration) {
+    public Training(String trainingName, int id, TrainingType trainingType, Date trainingDate, Trainee trainee, Trainer trainer, int duration) {
         this.trainingName = trainingName;
+        this.id = id;
+        this.trainingType = trainingType;
         this.trainingDate = trainingDate;
+        this.trainee = trainee;
+        this.trainer = trainer;
         this.duration = duration;
     }
 }

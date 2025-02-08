@@ -1,5 +1,6 @@
 package org.gymCrm.hibernate.dto;
 
+import org.gymCrm.hibernate.dto.address.AddressDTO;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

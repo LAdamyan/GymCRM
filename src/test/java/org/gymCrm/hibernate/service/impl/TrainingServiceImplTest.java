@@ -1,151 +1,105 @@
 package org.gymCrm.hibernate.service.impl;
 
-import org.gymCrm.hibernate.dao.TrainingDAO;
 import org.gymCrm.hibernate.model.Training;
 import org.gymCrm.hibernate.model.TrainingType;
-import org.gymCrm.hibernate.service.UserDetailsService;
+import org.gymCrm.hibernate.repo.TrainingRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.MockitoAnnotations;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
 class TrainingServiceImplTest {
-
-    @Mock
-    private TrainingDAO trainingDAO;
-
-    @Mock
-    private UserDetailsService userDetailsService;
 
     @InjectMocks
     private TrainingServiceImpl trainingService;
 
-    private Training mockTraining;
-    private String username;
-    private String password;
+    @Mock
+    private TrainingRepository trainingRepository;
+
+    private Training training;
 
     @BeforeEach
     void setUp() {
-        username = "testUser";
-        password = "testPassword";
-        mockTraining = new Training();
-        mockTraining.setId(1);
+        MockitoAnnotations.openMocks(this);
+        training = new Training();
+        training.setTrainingName("Morning Cardio");
+        training.setTrainingDate(new Date());
+        training.setDuration(60);
+        training.setTrainingType(new TrainingType("CARDIO"));
     }
 
     @Test
-    void createTraining_Success() {
-        when(userDetailsService.authenticate(username, password)).thenReturn(true);
+    void testCreate() {
+        when(trainingRepository.save(any(Training.class))).thenReturn(training);
 
-        trainingService.createTraining(mockTraining, username, password);
+        trainingService.create(training);
 
-        verify(userDetailsService, times(1)).authenticate(username, password);
-        verify(trainingDAO, times(1)).create(mockTraining);
+        verify(trainingRepository).save(training);
+        assertNotNull(training);
     }
 
     @Test
-    void createTraining_AuthenticationFailure() {
-        when(userDetailsService.authenticate(username, password)).thenReturn(false);
+    void testSelectByType() {
+        TrainingType type = new TrainingType("CARDIO");
+        List<Training> expectedTrainings = new ArrayList<>();
+        expectedTrainings.add(training);
 
-        SecurityException exception = assertThrows(SecurityException.class,
-                () -> trainingService.createTraining(mockTraining, username, password));
+        when(trainingRepository.findByTrainingType(type)).thenReturn(expectedTrainings);
 
-        assertEquals("Authentication failed for user: testUser permission denied", exception.getMessage());
-        verify(userDetailsService, times(1)).authenticate(username, password);
-        verify(trainingDAO, never()).create(any());
-    }
-
-    @Test
-    void getTrainingByType_Success() {
-        TrainingType trainingTypeEntity = new TrainingType();
-        trainingTypeEntity.setId(1);
-        trainingTypeEntity.setTypeName("BODYBUILDING");
-
-
-        Training mockTraining = new Training();
-        mockTraining.setId(1);
-        mockTraining.setTrainingName("Strength Training");
-        mockTraining.setTrainingType(trainingTypeEntity);
-
-        List<Training> trainings = Arrays.asList(mockTraining);
-
-        when(userDetailsService.authenticate(username, password)).thenReturn(true);
-        when(trainingDAO.selectByType(trainingTypeEntity)).thenReturn(Optional.of(trainings));
-
-        Optional<List<Training>> result = trainingService.getTrainingByType(trainingTypeEntity, username, password);
-
-        assertTrue(result.isPresent(), "Trainings should be present");
-        assertEquals(1, result.get().size(), "There should be one training");
-        assertEquals("Strength Training", result.get().get(0).getTrainingName(), "Training name should match");
-        assertEquals("BODYBUILDING", result.get().get(0).getTrainingType().getTypeName(), "Training type should match");
-
-        verify(userDetailsService, times(1)).authenticate(username, password);
-        verify(trainingDAO, times(1)).selectByType(trainingTypeEntity);
-    }
-
-    @Test
-    void getTraineeTrainings_Success() {
-        Date fromDate = new Date();
-        Date toDate = new Date();
-        String trainerName = "trainer1";
-
-        TrainingType trainingType = new TrainingType();
-        trainingType.setTypeName("BODYBUILDING");
-
-        List<Training> trainings = Arrays.asList(mockTraining);
-
-        when(userDetailsService.authenticate(username, password)).thenReturn(true);
-        when(trainingDAO.getTraineeTrainings(username, fromDate, toDate, trainerName, trainingType))
-                .thenReturn(Optional.of(trainings));
-
-        Optional<List<Training>> result = trainingService.getTraineeTrainings(username, password, fromDate, toDate, trainerName, trainingType);
+        Optional<List<Training>> result = trainingService.selectByType(type);
 
         assertTrue(result.isPresent());
         assertEquals(1, result.get().size());
-        verify(userDetailsService, times(1)).authenticate(username, password);
-        verify(trainingDAO, times(1)).getTraineeTrainings(username, fromDate, toDate, trainerName, trainingType);
+        assertEquals(training.getTrainingName(), result.get().get(0).getTrainingName());
     }
-
     @Test
-    void getTrainerTrainings_Success() {
+    void testGetTraineeTrainings() {
+        String username = "john.doe";
         Date fromDate = new Date();
         Date toDate = new Date();
-        String traineeName = "trainee1";
+        String trainerName = "Trainer Name";
+        TrainingType trainingType = new TrainingType("CARDIO");
 
-        List<Training> trainings = Arrays.asList(mockTraining);
+        List<Training> trainings = new ArrayList<>();
+        trainings.add(training);
 
-        when(userDetailsService.authenticate(username, password)).thenReturn(true);
-        when(trainingDAO.getTrainerTrainings(username, fromDate, toDate, traineeName))
-                .thenReturn(Optional.of(trainings));
+        when(trainingRepository.findTraineeTrainings(anyString(), any(Date.class), any(Date.class), anyString(), anyString()))
+                .thenReturn(trainings);
 
-        Optional<List<Training>> result = trainingService.getTrainerTrainings(username, password, fromDate, toDate, traineeName);
+        Optional<List<Training>> result = trainingService.getTraineeTrainings(username, fromDate, toDate, trainerName, trainingType);
 
         assertTrue(result.isPresent());
-        assertEquals(1, result.get().size());
-        verify(userDetailsService, times(1)).authenticate(username, password);
-        verify(trainingDAO, times(1)).getTrainerTrainings(username, fromDate, toDate, traineeName);
+        assertFalse(result.get().isEmpty());
+        assertEquals(training.getTrainingName(), result.get().get(0).getTrainingName());
     }
-
     @Test
-    void getTrainerTrainings_AuthenticationFailure() {
+    void testGetTrainerTrainings(){
+        String username = "Trainer.username";
         Date fromDate = new Date();
         Date toDate = new Date();
-        String traineeName = "trainee1";
+        String traineeName = "Trainee.username";
 
-        when(userDetailsService.authenticate(username, password)).thenReturn(false);
+        List<Training>trainings = new ArrayList<>();
+        trainings.add(training);
 
-        SecurityException exception = assertThrows(SecurityException.class,
-                () -> trainingService.getTrainerTrainings(username, password, fromDate, toDate, traineeName));
+        when(trainingRepository.findTrainerTrainings(anyString(),any(Date.class),any(Date.class),anyString())).thenReturn(trainings);
 
-        assertEquals("Authentication failed for user: testUser permission denied", exception.getMessage());
-        verify(userDetailsService, times(1)).authenticate(username, password);
-        verify(trainingDAO, never()).getTrainerTrainings(any(), any(), any(), any());
+        Optional<List<Training>>result = trainingService.getTrainerTrainings(username,fromDate,toDate,traineeName);
+
+        assertTrue(result.isPresent());
+        assertFalse(result.get().isEmpty());
+        assertEquals(training.getTrainingName(), result.get().get(0).getTrainingName());
     }
 }

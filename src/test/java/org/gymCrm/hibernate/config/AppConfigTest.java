@@ -1,24 +1,34 @@
 package org.gymCrm.hibernate.config;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.springframework.orm.hibernate5.LocalSessionFactoryBean;
-import org.springframework.transaction.PlatformTransactionManager;
+import org.mockito.Mock;
+import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistration;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 class AppConfigTest {
 
-    @Test
-    public void testAppConfig() {
-        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
+    @Mock
+    private CustomTransactionInterceptor customTransactionInterceptor;
 
-        assertNotNull(context, "ApplicationContext should not be null");
+    private AppConfig appConfig;
 
-        assertNotNull(context.getBean(DriverManagerDataSource.class), "DataSource bean should be available");
-        assertNotNull(context.getBean(LocalSessionFactoryBean.class), "SessionFactory bean should be available");
-        assertNotNull(context.getBean(PlatformTransactionManager.class), "TransactionManager bean should be available");
+    @BeforeEach
+    void setUp() {
+        appConfig = new AppConfig(customTransactionInterceptor);
     }
+    @Test
+    void testInterceptorRegistration() {
+        InterceptorRegistry registry = mock(InterceptorRegistry.class);
+        when(registry.addInterceptor(any(HandlerInterceptor.class))).thenReturn(mock(InterceptorRegistration.class));
+
+        appConfig.addInterceptors(registry);
+
+        verify(registry, times(1)).addInterceptor(customTransactionInterceptor);
+    }
+
 }

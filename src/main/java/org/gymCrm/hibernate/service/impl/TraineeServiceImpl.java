@@ -1,14 +1,18 @@
 package org.gymCrm.hibernate.service.impl;
 
+import jakarta.persistence.NoResultException;
 import lombok.extern.slf4j.Slf4j;
-import org.gymCrm.hibernate.dao.TraineeDAO;
+import org.gymCrm.hibernate.endpoint.CustomMetrics;
 import org.gymCrm.hibernate.model.Trainee;
+import org.gymCrm.hibernate.model.Trainer;
+import org.gymCrm.hibernate.repo.TraineeRepository;
 import org.gymCrm.hibernate.service.TraineeService;
 import org.gymCrm.hibernate.service.UserDetailsService;
 import org.gymCrm.hibernate.util.UserCredentialsUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,129 +20,181 @@ import java.util.Optional;
 @Service
 public class TraineeServiceImpl implements TraineeService {
 
-    private final TraineeDAO traineeDAO;
+    private final TraineeRepository traineeRepository;
+
+    private final UserCredentialsUtil userCredentialsUtil;
+
     private final UserDetailsService<Trainee> userDetailsService;
 
 
-    public TraineeServiceImpl(TraineeDAO traineeDAO, UserCredentialsUtil userCredentialsUtil, UserDetailsService<Trainee> userDetailsService) {
-        this.traineeDAO = traineeDAO;
+
+
+    public TraineeServiceImpl(TraineeRepository traineeRepository, UserCredentialsUtil userCredentialsUtil, UserDetailsService<Trainee> userDetailsService, CustomMetrics customMetrics) {
+        this.traineeRepository = traineeRepository;
+        this.userCredentialsUtil = userCredentialsUtil;
         this.userDetailsService = userDetailsService;
+
     }
 
     @Transactional
     @Override
-    public String saveTrainee(Trainee trainee) {
-        traineeDAO.create(trainee);
-        log.info("Created new trainee with username: {}", trainee.getUsername());
-        return trainee.getPassword();
-    }
+    public void create(Trainee trainee) {
+        log.info("Saving trainee: {}", trainee);
+        try {
+            String username = UserCredentialsUtil.generateUsername(trainee.getFirstName(), trainee.getLastName());
+            Optional<Trainee> existingTrainee = traineeRepository.findByUsername(username);
 
-    @Transactional(readOnly = true)
-    @Override
-    public Optional<List<Trainee>> getAllTrainees(String username, String password) {
-        if (!userDetailsService.authenticate(username, password)) {
-            log.warn("Authentication failed for user: {}", username);
-            return Optional.empty();
-        } else {
-            log.info("Access granted. Retrieving all trainees.");
-            return traineeDAO.listAll();
+            if (existingTrainee.isPresent()) {
+                Trainee existing = existingTrainee.get();
+                trainee.setUsername(existing.getUsername());
+                trainee.setPassword(existing.getPassword());
+                log.info("Trainee with username '{}' already exists. Using existing credentials.", username);
+            } else {
+                trainee.setUsername(username);
+                trainee.setPassword(userCredentialsUtil.generatePassword());
+                log.info("Generated new username '{}' and password for the trainee.", username);
+            }
+            traineeRepository.save(trainee);
+            log.info("Trainee saved successfully with username: {}", username);
+        } catch (Exception e) {
+            log.error("Error while creating trainee", e);
+            throw e;
         }
     }
 
-    @Override
-    public Optional<List<Trainee>> getAllTrainees() {
-        return traineeDAO.listAll();
-    }
-
     @Transactional
     @Override
-    public Optional<Trainee> getTraineeByUsername(String username, String password) {
-        if (!userDetailsService.authenticate(username, password)) {
-            throw new SecurityException("User " + username + " not authenticated, permission denied!");
-        }
-        log.info("Fetching trainee by username: {}", username);
-        return traineeDAO.selectByUsername(username);
-
-    }
-    @Transactional(readOnly = true)
-    @Override
-    public Optional<Trainee> getTraineeByUsername(String username) {
-        log.info("Fetching trainee by username without authentication: {}", username);
-        return traineeDAO.selectByUsername(username);
-    }
-
-    @Transactional
-    @Override
-    public void updateTrainee(Trainee trainee, String username, String password) {
+    public void update(Trainee trainee,String username, String password) {
+        log.info("Updating trainee: {}", trainee);
         if (!userDetailsService.authenticate(trainee.getUsername(), password)) {
             throw new SecurityException("User " + trainee.getUsername() + " not authenticated, permission denied!");
         }
-        traineeDAO.update(trainee);
-        log.info("Updated trainee with username: {}", username);
+        try {
+            if (traineeRepository.existsById(trainee.getId())) {
+                traineeRepository.save(trainee);
+                log.info("Trainee with username {} updated successfully.",username);
+            } else {
+                log.warn("Trainee with ID {} not found.", trainee.getId());
+            }
+        } catch (Exception e) {
+            log.error("Error while updating trainee", e);
+        }
     }
 
     @Transactional
     @Override
-    public void deleteTrainee(String username, String password) {
+    public void delete(String username, String password) {
+        log.info("Deleting trainee with username {}", username);
         if (!userDetailsService.authenticate(username, password)) {
             throw new SecurityException("User " + username + " not authenticated, permission denied!");
         }
-        traineeDAO.delete(username);
-        log.info("Deleted trainee with username: {}", username);
+        try {
+            traineeRepository.deleteByUsername(username);
+            log.info("Deleted trainee with username: {}", username);
+        } catch (Exception e) {
+            log.error("Error during deletion of trainee with username: {}", username, e);
+            throw e;
+        }
     }
+
+
     @Transactional
     @Override
-    public void deleteTrainee(String username) {
-        traineeDAO.delete(username);
+    public void delete(String username) {
+        traineeRepository.deleteByUsername(username);
         log.info("Deleted trainee with username: {}", username);
     }
 
 
+    @Transactional
     @Override
-    public void changeTraineesPassword(String username, String oldPassword, String newPassword) {
-       if(!userDetailsService.authenticate(username,oldPassword)){
-           throw  new SecurityException("User " + username + " not authenticated, permission denied!");
-       }
-       traineeDAO.changeTraineesPassword(username,newPassword);
-       log.info("Trainee's {} password changed",username);
+    public Optional<Trainee> selectByUsername(String username) {
+        log.info("Fetching trainee by username: {}", username);
+        try {
+            return traineeRepository.findByUsername(username);
+        } catch (NoResultException e) {
+            log.warn("No trainee found for username: {}", username);
+            return Optional.empty();
+        } catch (Exception e) {
+            log.error("Error occurred while fetching trainee with username: {}", username, e);
+            throw e;
+        }
     }
 
+    @Transactional
     @Override
-    public void changeTraineeActiveStatus(String username, String password) {
+    public List<Trainee> listAll() {
+        log.info("Fetching all trainees.");
+        return traineeRepository.findAll();
+    }
+
+
+    @Transactional
+    @Override
+    public void changeTraineePassword(String username,String oldPassword, String newPassword) {
+        log.info("Changing password for trainee with username {}", username);
+        if (!userDetailsService.authenticate(username, oldPassword)) {
+            throw new SecurityException("User " + username + " not authenticated, permission denied!");
+        }
+        try {
+            Optional<Trainee> optionalTrainee = traineeRepository.findByUsername(username);
+            optionalTrainee.ifPresentOrElse(
+                    trainee -> {
+                        trainee.setPassword(newPassword);
+                        traineeRepository.save(trainee);
+                        log.info("Password updated successfully for trainee: {}", username);
+                    },
+                    () -> log.warn("Trainee with username '{}' not found.", username));
+        } catch (Exception e) {
+            log.error("Error while changing password for trainee with username: {}", username, e);
+            throw e;
+
+        }
+    }
+
+    @Transactional
+    @Override
+    public void changeTraineeActiveStatus(String username, String password,boolean isActive) {
+        log.info("Changing active status of trainee with username {}", username);
         if (!userDetailsService.authenticate(username, password)) {
             throw new SecurityException("User " + username + " not authenticated, permission denied!");
         }
-        Optional<Trainee> optionalTrainee = traineeDAO.selectByUsername(username);
+            Optional<Trainee> optionalTrainee = traineeRepository.findByUsername(username);
+            if (optionalTrainee.isPresent()) {
+                Trainee trainee = optionalTrainee.get();
+                trainee.setActive(isActive);
+                traineeRepository.save(trainee);
 
-       if(optionalTrainee.isPresent()){
-           Trainee trainee = optionalTrainee.get();
-           traineeDAO.changeTraineeActiveStatus(username);
-
-           String action = trainee.isActive() ? "deactivated" : "activated";
-           log.info("Trainee {} successfully {}", username, action);
-       } else {
-           log.warn("Trainee not found for username: {}", username);
-       }
-       }
-
-    @Override
-    public void changeTraineeActiveStatus(String username, String password, boolean isActive) {
-        if (!userDetailsService.authenticate(username, password)) {
-            throw new SecurityException("User " + username + " not authenticated, permission denied!");
+                String action = isActive ? "activated" : "deactivated";
+                log.info("Trainee {} successfully {}", username, action);
+            } else {
+                log.warn("Trainee not found for username: {}", username);
+            }
         }
-        Optional<Trainee> optionalTrainee = traineeDAO.selectByUsername(username);
-        if(optionalTrainee.isPresent()){
-            Trainee trainee = optionalTrainee.get();
-            trainee.setActive(isActive);
-            traineeDAO.update(trainee);  // Make sure DAO supports updating a Trainee
 
-            String action = isActive ? "activated" : "deactivated";
-            log.info("Trainee {} successfully {}", username, action);
-        } else {
-            log.warn("Trainee not found for username: {}", username);
-        }
-    }
+   @Transactional
+   @Override
+    public void updateTraineeTrainers(String traineeUsername,List<Trainer>trainers){
+       log.info("Updating trainers for trainee with username: {}", traineeUsername);
+       try{
+           Optional<Trainee>optionalTrainee = traineeRepository.findByUsername(traineeUsername);
+           optionalTrainee.ifPresentOrElse(
+                   trainee -> {
+                       trainee.setTrainers(new HashSet<>(trainers));
+                       traineeRepository.save(trainee);
+                       log.info("Trainers updated for trainee: {}", traineeUsername);
+                   },
+           ()->log.warn("Trainee with username '{}' not found.", traineeUsername)
+           );
+       }catch (Exception e){
+           log.error("Error while updating trainers for trainee with username: {}", traineeUsername, e);
+           throw e;
+       }
+   }
+
+
 }
+
 
 
 

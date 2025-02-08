@@ -1,139 +1,161 @@
 package org.gymCrm.hibernate.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
-import org.gymCrm.hibernate.dao.TrainerDAO;
-import org.gymCrm.hibernate.dto.UpdateTrainerDTO;
+import org.gymCrm.hibernate.dto.trainer.UpdateTrainerDTO;
 import org.gymCrm.hibernate.model.Trainer;
+import org.gymCrm.hibernate.repo.TrainerRepository;
 import org.gymCrm.hibernate.service.TrainerService;
 import org.gymCrm.hibernate.service.UserDetailsService;
+import org.gymCrm.hibernate.util.UserCredentialsUtil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
-
 @Slf4j
 @Service
 public class TrainerServiceImpl implements TrainerService {
 
-    private final TrainerDAO trainerDAO;
+    private final TrainerRepository trainerRepository;
+
+    private final UserCredentialsUtil userCredentialsUtil;
+
     private final UserDetailsService<Trainer> userDetailsService;
 
-    public TrainerServiceImpl(TrainerDAO trainerDAO, UserDetailsService userDetailsService) {
-
-        this.trainerDAO = trainerDAO;
+    public TrainerServiceImpl(TrainerRepository trainerRepository, UserCredentialsUtil userCredentialsUtil, UserDetailsService<Trainer> userDetailsService) {
+        this.trainerRepository = trainerRepository;
+        this.userCredentialsUtil = userCredentialsUtil;
         this.userDetailsService = userDetailsService;
     }
 
+    public boolean doesTrainerExist(String username) {
+        return trainerRepository.findByUsername(username).isPresent();
+    }
+
     @Transactional
-    @Override
-    public void saveTrainer(Trainer trainer) {
-        log.info("Attempting to save trainer: {}", trainer);
+    public void create(Trainer trainer) {
+        log.info("Saving trainer: {}", trainer);
         try {
-            trainerDAO.create(trainer);
-            log.info("Trainer saved successfully with ID: {}", trainer.getId());
+            String username = userCredentialsUtil.generateUsername(trainer.getFirstName(), trainer.getLastName());
+            Optional<Trainer> existingTrainer = trainerRepository.findByUsername(username);
+
+            if (existingTrainer.isPresent()) {
+                Trainer existing = existingTrainer.get();
+                trainer.setUsername(existing.getUsername());
+                trainer.setPassword(existing.getPassword());
+                log.info("Trainer with username '{}' already exists. Using existing credentials.", username);
+            } else {
+                trainer.setUsername(username);
+                trainer.setPassword(userCredentialsUtil.generatePassword());
+                log.info("Generated new username '{}' and password for the trainer.", username);
+            }
+            trainerRepository.save(trainer);
+            log.info("Trainer saved successfully with username: {}", username);
         } catch (Exception e) {
-            log.error("Error while saving trainer", e);
+            log.error("Error while creating trainer", e);
+            throw e;
+        }
+    }
+
+    @Transactional
+    public void update(Trainer trainer,String username,String password) {
+        log.info("Updating trainer: {}", trainer);
+        if (!userDetailsService.authenticate(trainer.getUsername(), password)) {
+            throw new SecurityException("User " + trainer.getUsername() + " not authenticated, permission denied!");
+        }
+        try {
+            if (trainerRepository.existsById(trainer.getId())) {
+                trainerRepository.save(trainer);
+                log.info("Trainer with username {} updated successfully.",username);
+            } else {
+                log.warn("Trainer with ID {} not found.", trainer.getId());
+            }
+        } catch (Exception e) {
+            log.error("Error while updating trainer", e);
             throw e;
         }
     }
 
     @Override
-    public void updateTrainer(Trainer trainer, String username, String password) {
-        log.info("Attempting to update trainer: {}", trainer);
-        if (!userDetailsService.authenticate(trainer.getUsername(), password)) {
-            throw new SecurityException("User " + trainer.getUsername() + " not authenticated, permission denied!");
-        }
-        trainerDAO.update(trainer);
-        log.info("Updated trainer with username: {}", username);
-    }
-
-    @Override
     public Optional<Trainer> updateTrainer(String username, UpdateTrainerDTO updateDTO) {
-        Optional<Trainer> trainerOpt = trainerDAO.selectByUsername(username);
+        Optional<Trainer> trainerOpt = trainerRepository.findByUsername(username);
         if (trainerOpt.isPresent()) {
             Trainer trainer = trainerOpt.get();
             trainer.setFirstName(updateDTO.getFirstName());
             trainer.setLastName(updateDTO.getLastName());
-            trainerDAO.create(trainer);
+            String newUsername = userCredentialsUtil.generateUsername(updateDTO.getFirstName(),updateDTO.getLastName());;
+            trainer.setUsername(newUsername);
+            trainerRepository.save(trainer);
             return Optional.of(trainer);
         }
         return Optional.empty();
     }
 
-    @Override
-    public void updateTrainer(Trainer trainer, String username) {
-        trainerDAO.update(trainer);
-        log.info("Updated trainer with username: {}", username);
-    }
-
-    @Transactional(readOnly = true)
-    @Override
-    public Optional<Trainer> getTrainerByUsername(String username, String password) {
-        log.info("Fetching trainer by ID: {}", username);
-        if (!userDetailsService.authenticate(username, password)) {
-            throw new SecurityException("Invalid username or password");
+    public Optional<Trainer> selectByUsername(String username) {
+        log.info("Fetching trainer by username: {}", username);
+        try {
+            return trainerRepository.findByUsername(username);
+        } catch (Exception e) {
+            log.error("Error occurred while fetching trainer with username: {}", username, e);
+            throw e;
         }
-        return trainerDAO.selectByUsername(username);
     }
 
-    @Transactional(readOnly = true)
-    @Override
-    public Optional<Trainer> getTrainerByUsername(String username) {
-        log.info("Fetching trainer by ID: {}", username);
-        return trainerDAO.selectByUsername(username);
-    }
-
-    @Override
-    public void changeTrainersPassword(String username, String oldPassword, String newPassword) {
+    @Transactional
+    public void changeTrainersPassword(String username, String oldPassword,String newPassword) {
+        log.info("Changing password for trainer with username: {}", username);
         if (!userDetailsService.authenticate(username, oldPassword)) {
             throw new SecurityException("Invalid username or password");
         }
-        trainerDAO.changeTrainersPassword(username, newPassword);
-        log.info("Trainer's {} password changed", username);
+        try {
+            Optional<Trainer> trainerOptional = trainerRepository.findByUsername(username);
+            trainerOptional.ifPresentOrElse(
+                    trainer -> {
+                        trainer.setPassword(newPassword);
+                        trainerRepository.save(trainer);
+                        log.info("Password updated successfully for trainer: {}", username);
+                    },
+                    () -> log.warn("Trainer with username '{}' not found.", username)
+            );
+        } catch (Exception e) {
+            log.error("Error while changing password for trainer with username: {}", username, e);
+            throw e;
+        }
     }
 
-    @Override
-    public void changeTrainerActiveStatus(String username, String password) {
+    @Transactional
+    public void changeTrainerActiveStatus(String username,String password,boolean isActive) {
+        log.info("Changing active status of trainer with username {}", username);
         if (!userDetailsService.authenticate(username, password)) {
             throw new SecurityException("User " + username + " not authenticated, permission denied!");
         }
-        Optional<Trainer> optionalTrainer = trainerDAO.selectByUsername(username);
-        if (optionalTrainer.isPresent()) {
-            Trainer trainer = optionalTrainer.get();
-            trainerDAO.changeTrainerActiveStatus(username);
-
-            String action = trainer.isActive() ? "activated" : "deactivated";
-            log.info("Trainer {} successfully {} ", username, action);
-        } else {
-            log.warn("Trainer not found for username: {}", username);
-        }
-    }
-    @Override
-    public void changeTrainerActiveStatus(String username, String password,boolean isActive) {
-        if (!userDetailsService.authenticate(username, password)) {
-            throw new SecurityException("User " + username + " not authenticated, permission denied!");
-        }
-        Optional<Trainer> optionalTrainer = trainerDAO.selectByUsername(username);
+        Optional<Trainer> optionalTrainer = trainerRepository.findByUsername(username);
         if (optionalTrainer.isPresent()) {
             Trainer trainer = optionalTrainer.get();
             trainer.setActive(isActive);
-            trainerDAO.update(trainer);
+            trainerRepository.save(trainer);
 
-            String action = trainer.isActive() ? "activated" : "deactivated";
-            log.info("Trainer {} successfully {} ", username, action);
+            String action = isActive ? "activated" : "deactivated";
+            log.info("Trainer {} successfully {}", username, action);
         } else {
             log.warn("Trainer not found for username: {}", username);
         }
     }
 
     @Override
-    public Optional<List<Trainer>> getUnassignedTrainers(String username, String password, String traineeUsername) {
+    public Optional<List<Trainer>> getUnassignedTrainers(String username) {
+        log.info("Get unassigned trainers for trainee {} ",username);
+        return trainerRepository.getUnassignedTrainers(username);
+    }
+
+    @Override
+    public Optional<List<Trainer>> getUnassignedTrainers(String traineeUsername,  String username, String password) {
         if (!userDetailsService.authenticate(username, password)) {
             throw new SecurityException("User " + username + " not authenticated, permission denied!");
         }
         log.info("Get unassigned trainers for trainee {} ", traineeUsername);
-        return trainerDAO.getUnassignedTrainers(traineeUsername);
+        return trainerRepository.getUnassignedTrainers(traineeUsername);
     }
+
 
 }
