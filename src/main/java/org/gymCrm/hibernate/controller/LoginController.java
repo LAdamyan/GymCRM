@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
 @SecurityRequirement(name = "BearerAuth")
 @RestController
 public class LoginController {
-    private final BruteForceProtectionService bruteForceProtectionService;
+
     private final AuthenticationService authenticationService;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
@@ -43,8 +43,8 @@ public class LoginController {
 
     private final UserServiceImpl userServiceImpl;
 
-    public LoginController(BruteForceProtectionService bruteForceProtectionService, AuthenticationService authenticationService, AuthenticationManager authenticationManager, JwtUtil jwtUtil, UserServiceImpl userServiceImpl) {
-        this.bruteForceProtectionService = bruteForceProtectionService;
+    public LoginController( AuthenticationService authenticationService, AuthenticationManager authenticationManager, JwtUtil jwtUtil, UserServiceImpl userServiceImpl) {
+
         this.authenticationService = authenticationService;
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
@@ -62,22 +62,15 @@ public class LoginController {
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         String username = request.getUsername();
 
-        if (bruteForceProtectionService.isBlocked(username)) {
-            return ResponseEntity.status(HttpStatus.LOCKED)
-                    .body("User is temporarily blocked due to multiple failed login attempts.");
-        }
         try {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
         );
-            bruteForceProtectionService.loginSucceeded(username);
-
             String token = jwtUtil.generateToken(username, authentication.getAuthorities()
                     .stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList()));
 
             return ResponseEntity.ok(new AuthResponse(token));
         } catch (BadCredentialsException e) {
-            bruteForceProtectionService.loginFailed(username);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password.");
         }
 

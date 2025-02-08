@@ -16,6 +16,7 @@ public class BruteForceProtectionService {
     private static final long LOCK_TIME_DURATION = 5 * 60;
     private final Map<String, FailedLoginAttempt> attemptsCache = new ConcurrentHashMap<>();
 
+
     public void loginFailed(String username) {
         FailedLoginAttempt attempt = attemptsCache.getOrDefault(username, new FailedLoginAttempt());
         attempt.incrementAttempts();
