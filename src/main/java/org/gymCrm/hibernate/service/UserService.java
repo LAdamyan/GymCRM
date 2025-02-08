@@ -4,9 +4,9 @@ import org.gymCrm.hibernate.model.User;
 
 import java.util.Optional;
 
-public interface UserService <T extends User>{
+public interface UserService {
 
-    Optional<T> findByUsername(String username);
+    Optional<User> findByUsername(String username);
 
-    Optional<T> changePassword(String username, String newPassword);
+    boolean changePassword(String username, String oldPassword, String newPassword);
 }

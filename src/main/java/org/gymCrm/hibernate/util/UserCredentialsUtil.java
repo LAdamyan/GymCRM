@@ -3,6 +3,7 @@ package org.gymCrm.hibernate.util;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.gymCrm.hibernate.repo.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -13,6 +14,7 @@ import java.util.Map;
 public class UserCredentialsUtil {
 
     private final UserRepository userRepository;
+
 
     private static final Map<String, Integer> usernameCounts = new HashMap<>();
 

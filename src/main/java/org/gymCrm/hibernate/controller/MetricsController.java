@@ -15,11 +15,6 @@ public class MetricsController {
         this.customMetrics = customMetrics;
     }
 
-    @GetMapping("/trainee-registrations")
-    public long getTraineeRegistrationCount() {
-        return customMetrics.getTraineeRegistrationCount();
-    }
-
     @GetMapping("/training-types")
     public long getTrainingTypesCount(){
         return customMetrics.getTrainingTypesCount();

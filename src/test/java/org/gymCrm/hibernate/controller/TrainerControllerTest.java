@@ -3,7 +3,7 @@ package org.gymCrm.hibernate.controller;
 import org.gymCrm.hibernate.dto.trainer.ActiveTrainerDTO;
 import org.gymCrm.hibernate.dto.trainer.TrainerProfileDTO;
 import org.gymCrm.hibernate.model.Trainer;
-import org.gymCrm.hibernate.service.UserDetailsService;
+import org.gymCrm.hibernate.util.AuthenticationService;
 import org.gymCrm.hibernate.service.impl.TrainerServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,7 +31,7 @@ class TrainerControllerTest {
 
 
     @Mock
-    private UserDetailsService<Trainer> userDetailsService;
+    private AuthenticationService authenticationService;
 
     private Trainer trainer;
 
@@ -55,10 +55,10 @@ class TrainerControllerTest {
     void testGetTrainerProfile() {
 
         String username = "john.doe";
-        when(userDetailsService.authenticate(anyString(), anyString())).thenReturn(true);
+        when(authenticationService.authenticate(anyString(), anyString())).thenReturn(true);
         when(trainerServiceImpl.selectByUsername(username)).thenReturn(Optional.of(trainer));
 
-        ResponseEntity<TrainerProfileDTO> response = trainerController.getTrainerProfile(username, "authUser", "authPass");
+        ResponseEntity<TrainerProfileDTO> response = trainerController.getTrainerProfile(username);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals("john.doe", response.getBody().getUsername());
@@ -73,10 +73,10 @@ class TrainerControllerTest {
         String username = "Lil.Adamyan";
         trainer.setActive(true);
 
-        when(userDetailsService.authenticate(anyString(), anyString())).thenReturn(true);
+        when(authenticationService.authenticate(anyString(), anyString())).thenReturn(true);
         when(trainerServiceImpl.selectByUsername(username)).thenReturn(Optional.of(trainer));
 
-        ResponseEntity<Void> response = trainerController.changeTrainerStatus(username, "authPass", false, "authUser", "authPass");
+        ResponseEntity<Void> response = trainerController.changeTrainerStatus(username, "authPass", false);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         verify(trainerServiceImpl).changeTrainerActiveStatus(username, "authPass", false);
@@ -88,7 +88,7 @@ class TrainerControllerTest {
         String traineeUsername = "Lil.Adamyan";
         List<Long> assignedTrainerIds = List.of(1L, 2L);
 
-        when(userDetailsService.authenticate(anyString(), anyString())).thenReturn(true);
+        when(authenticationService.authenticate(anyString(), anyString())).thenReturn(true);
 
         Trainer trainer1 = new Trainer();
         trainer1.setUsername("trainer3");
@@ -104,7 +104,7 @@ class TrainerControllerTest {
         when(trainerServiceImpl.getUnassignedTrainers(eq(traineeUsername),  anyString(), anyString()))
                 .thenReturn(Optional.of(unassignedTrainers));
 
-        ResponseEntity<List<ActiveTrainerDTO>> response = trainerController.getUnassignedActiveTrainers(traineeUsername, "authUser", "authPassword");
+        ResponseEntity<List<ActiveTrainerDTO>> response = trainerController.getUnassignedActiveTrainers(traineeUsername);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         List<ActiveTrainerDTO> trainerDTOs = response.getBody();

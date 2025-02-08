@@ -3,7 +3,7 @@ package org.gymCrm.hibernate.service.impl;
 import org.gymCrm.hibernate.model.Trainer;
 import org.gymCrm.hibernate.model.TrainingType;
 import org.gymCrm.hibernate.repo.TrainerRepository;
-import org.gymCrm.hibernate.service.UserDetailsService;
+import org.gymCrm.hibernate.util.AuthenticationService;
 import org.gymCrm.hibernate.util.UserCredentialsUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,7 +30,7 @@ class TrainerServiceImplTest {
     private UserCredentialsUtil userCredentialsUtil;
 
     @Mock
-    private UserDetailsService<Trainer> userDetailsService;
+    private AuthenticationService authenticationService;
 
     private Trainer trainer;
 
@@ -67,7 +67,7 @@ class TrainerServiceImplTest {
 
     @Test
     void testUpdateTrainer() {
-        when(userDetailsService.authenticate(anyString(), anyString())).thenReturn(true);
+        when(authenticationService.authenticate(anyString(), anyString())).thenReturn(true);
         when(trainerRepository.existsById(anyInt())).thenReturn(true);
         when(trainerRepository.save(any(Trainer.class))).thenReturn(trainer);
 
@@ -88,7 +88,7 @@ class TrainerServiceImplTest {
 
     @Test
     void testChangeTrainerPassword() {
-        when(userDetailsService.authenticate(anyString(), anyString())).thenReturn(true);
+        when(authenticationService.authenticate(anyString(), anyString())).thenReturn(true);
         when(trainerRepository.findByUsername(anyString())).thenReturn(Optional.of(trainer));
 
         trainerService.changeTrainersPassword("alice_smith", "password123", "newPassword");
@@ -99,7 +99,7 @@ class TrainerServiceImplTest {
 
 //    @Test
 //    void testChangeTrainerActiveStatus() {
-//        when(userDetailsService.authenticate(anyString(), anyString())).thenReturn(true);
+//        when(authenticationService.authenticate(anyString(), anyString())).thenReturn(true);
 //        when(trainerRepository.findByUsername(anyString())).thenReturn(Optional.of(trainer));
 //
 //        trainerService.changeTrainerActiveStatus("alice_smith", "password123", false);
@@ -109,7 +109,7 @@ class TrainerServiceImplTest {
 //    }
     @Test
     void testGetUnassignedTrainers() {
-        when(userDetailsService.authenticate(anyString(), anyString())).thenReturn(true);
+        when(authenticationService.authenticate(anyString(), anyString())).thenReturn(true);
         when(trainerRepository.findAll()).thenReturn(List.of(trainer));
 
         Optional<List<Trainer>> unassignedTrainers = trainerService.getUnassignedTrainers("trainee1", "admin", "adminpass");
