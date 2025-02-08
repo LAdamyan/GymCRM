@@ -52,6 +52,4 @@ public class CustomMetrics {
     public long getTotalTraineeCount() {
         return traineeRepository.count();
     }
-
-
 }

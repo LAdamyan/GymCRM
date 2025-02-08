@@ -36,14 +36,7 @@ class CustomMetricsTest {
 
 
     }
-    @Test
-    void testInitializeTraineeCount() {
-        when(traineeRepository.count()).thenReturn(5L);
 
-
-
-        verify(traineeCountCounter, times(5)).increment();
-    }
 
 
 

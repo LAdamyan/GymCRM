@@ -4,10 +4,11 @@ import org.gymCrm.hibernate.model.Trainee;
 import org.gymCrm.hibernate.model.Trainer;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface TraineeService {
-    void create(Trainee trainee);
+    Map<String,String> create(Trainee trainee);
     void update(Trainee trainee,String username, String password);
     void delete(String username,String password);
     void delete(String username);

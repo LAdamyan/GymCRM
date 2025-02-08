@@ -21,7 +21,7 @@ import java.util.Set;
 @DiscriminatorValue("TRAINER")
 public class Trainer extends User {
 
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.PERSIST)
     @JoinColumn(name = "training_type_id",nullable = false)
     private TrainingType specialization;
 

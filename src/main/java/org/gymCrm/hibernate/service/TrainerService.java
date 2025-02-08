@@ -4,10 +4,11 @@ import org.gymCrm.hibernate.dto.trainer.UpdateTrainerDTO;
 import org.gymCrm.hibernate.model.Trainer;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface TrainerService {
-    void create(Trainer trainer);
+    Map<String,String> create(Trainer trainer);
     void update(Trainer trainer,String username,String password);
     Optional<Trainer> updateTrainer(String username, UpdateTrainerDTO updateDTO);
     Optional<Trainer> selectByUsername(String username);
