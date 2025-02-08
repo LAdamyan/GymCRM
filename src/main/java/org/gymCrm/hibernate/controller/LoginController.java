@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.extern.slf4j.Slf4j;
+import org.gymCrm.hibernate.config.jwt.BruteForceProtectionService;
 import org.gymCrm.hibernate.config.jwt.JwtUtil;
 import org.gymCrm.hibernate.dto.AuthResponse;
 import org.gymCrm.hibernate.dto.LoginRequest;
@@ -17,6 +18,7 @@ import org.gymCrm.hibernate.service.impl.UserServiceImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
@@ -33,7 +35,7 @@ import java.util.stream.Collectors;
 @SecurityRequirement(name = "BearerAuth")
 @RestController
 public class LoginController {
-
+    private final BruteForceProtectionService bruteForceProtectionService;
     private final AuthenticationService authenticationService;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
@@ -41,7 +43,8 @@ public class LoginController {
 
     private final UserServiceImpl userServiceImpl;
 
-    public LoginController(AuthenticationService authenticationService, AuthenticationManager authenticationManager, JwtUtil jwtUtil, UserServiceImpl userServiceImpl) {
+    public LoginController(BruteForceProtectionService bruteForceProtectionService, AuthenticationService authenticationService, AuthenticationManager authenticationManager, JwtUtil jwtUtil, UserServiceImpl userServiceImpl) {
+        this.bruteForceProtectionService = bruteForceProtectionService;
         this.authenticationService = authenticationService;
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
@@ -56,19 +59,28 @@ public class LoginController {
             @ApiResponse(responseCode = "200", description = "Successfully authenticated"),
             @ApiResponse(responseCode = "401", description = "Unauthorized access -invalid credentials"),
             @ApiResponse(responseCode = "400", description = "Bad request - Missing or invalid authentication fields")})
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
+        String username = request.getUsername();
+
+        if (bruteForceProtectionService.isBlocked(username)) {
+            return ResponseEntity.status(HttpStatus.LOCKED)
+                    .body("User is temporarily blocked due to multiple failed login attempts.");
+        }
+        try {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
         );
+            bruteForceProtectionService.loginSucceeded(username);
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+            String token = jwtUtil.generateToken(username, authentication.getAuthorities()
+                    .stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList()));
 
-        List<String> roles = authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toList());
-        String token = jwtUtil.generateToken(request.getUsername(),roles);
+            return ResponseEntity.ok(new AuthResponse(token));
+        } catch (BadCredentialsException e) {
+            bruteForceProtectionService.loginFailed(username);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password.");
+        }
 
-        return ResponseEntity.ok(new AuthResponse(token));
     }
 
 

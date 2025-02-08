@@ -13,6 +13,8 @@ import org.gymCrm.hibernate.dto.trainer.TrainerProfileDTO;
 import org.gymCrm.hibernate.dto.trainer.UpdateTrainerDTO;
 import org.gymCrm.hibernate.model.Trainer;
 import org.gymCrm.hibernate.model.TrainingType;
+import org.gymCrm.hibernate.repo.TrainerRepository;
+import org.gymCrm.hibernate.repo.TrainingTypeRepository;
 import org.gymCrm.hibernate.util.AuthenticationService;
 import org.gymCrm.hibernate.service.impl.TrainerServiceImpl;
 import org.slf4j.MDC;
@@ -33,15 +35,6 @@ public class TrainerController {
 
 
     private final TrainerServiceImpl trainerServiceImpl;
-    private final AuthenticationService  authenticationService;
-
-    private void authenticate(String username, String password) {
-        if (!authenticationService.authenticate(username, password)) {
-            log.error("Authentication failed for user: {}", username);
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid username or password");
-        }
-        log.info("Authentication successful for user: {}", username);
-    }
 
     @GetMapping("/{username}/exists")
     public ResponseEntity<String> checkTrainerExists(@PathVariable String username) {
@@ -67,10 +60,6 @@ public class TrainerController {
         trainer.setFirstName(trainerDTO.getFirstName());
         trainer.setLastName(trainerDTO.getLastName());
 
-        if (trainerDTO.getSpecialization() != null) {
-            trainer.setSpecialization(trainerDTO.getSpecialization());
-        }
-
         log.info("Trainer after creation: {}", trainer);
 
         Map<String, String> response = trainerServiceImpl.create(trainer);
@@ -85,7 +74,6 @@ public class TrainerController {
             @ApiResponse(responseCode = "404", description = "Trainer not found")
     })
     @GetMapping("/{username}")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<TrainerProfileDTO> getTrainerProfile(
             @PathVariable String username) {
 
@@ -103,7 +91,6 @@ public class TrainerController {
             @ApiResponse(responseCode = "404", description = "Trainer not found")
     })
     @PutMapping("/{username}")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<TrainerProfileDTO> updateTrainerProfile(
             @PathVariable String username,
             @RequestBody @Valid UpdateTrainerDTO updateDTO) {
@@ -127,7 +114,6 @@ public class TrainerController {
             @ApiResponse(responseCode = "404", description = "Trainer not found")
     })
     @PatchMapping("/{username}/status")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<Void> changeTrainerStatus(
             @PathVariable String username,
             @RequestParam String password,
@@ -149,7 +135,6 @@ public class TrainerController {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @GetMapping("/{username}/not-assigned-trainers")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<List<ActiveTrainerDTO>> getUnassignedActiveTrainers(
             @PathVariable String username) {
 

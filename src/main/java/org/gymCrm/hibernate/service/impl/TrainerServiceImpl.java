@@ -3,7 +3,9 @@ package org.gymCrm.hibernate.service.impl;
 import lombok.extern.slf4j.Slf4j;
 import org.gymCrm.hibernate.dto.trainer.UpdateTrainerDTO;
 import org.gymCrm.hibernate.model.Trainer;
+import org.gymCrm.hibernate.model.TrainingType;
 import org.gymCrm.hibernate.repo.TrainerRepository;
+import org.gymCrm.hibernate.repo.TrainingTypeRepository;
 import org.gymCrm.hibernate.util.AuthenticationService;
 import org.gymCrm.hibernate.service.TrainerService;
 import org.gymCrm.hibernate.util.UserCredentialsUtil;
@@ -14,11 +16,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
 @Slf4j
 @Service
 public class TrainerServiceImpl implements TrainerService {
 
     private final TrainerRepository trainerRepository;
+    private final TrainingTypeRepository trainingTypeRepository;
 
     private final UserCredentialsUtil userCredentialsUtil;
 
@@ -26,8 +30,9 @@ public class TrainerServiceImpl implements TrainerService {
     private final PasswordEncoder passwordEncoder;
 
 
-    public TrainerServiceImpl(TrainerRepository trainerRepository, UserCredentialsUtil userCredentialsUtil, AuthenticationService authenticationService, PasswordEncoder passwordEncoder) {
+    public TrainerServiceImpl(TrainerRepository trainerRepository, TrainingTypeRepository trainingTypeRepository, UserCredentialsUtil userCredentialsUtil, AuthenticationService authenticationService, PasswordEncoder passwordEncoder) {
         this.trainerRepository = trainerRepository;
+        this.trainingTypeRepository = trainingTypeRepository;
         this.userCredentialsUtil = userCredentialsUtil;
         this.authenticationService = authenticationService;
         this.passwordEncoder = passwordEncoder;
@@ -38,38 +43,50 @@ public class TrainerServiceImpl implements TrainerService {
     }
 
     @Transactional
-    public Map<String,String> create(Trainer trainer) {
+    public Map<String, String> create(Trainer trainer) {
+
         log.info("Saving trainer: {}", trainer);
         try {
             String username = UserCredentialsUtil.generateUsername(trainer.getFirstName(), trainer.getLastName());
             Optional<Trainer> existingTrainer = trainerRepository.findByUsername(username);
 
-             if (existingTrainer.isPresent()) {
+            if (existingTrainer.isPresent()) {
                 log.info("Trainer with username '{}' already exists.", username);
                 return Map.of("message", "Trainer already exists", "username", username);
-            } else {
-                trainer.setUsername(username);
-                // Generate a raw password
-                String rawPassword = UserCredentialsUtil.generatePassword();
-
-                // Encode the password for DB storage
-                String encodedPassword = passwordEncoder.encode(rawPassword);
-                trainer.setPassword(encodedPassword);
-
-                trainerRepository.save(trainer);
-                log.info("Trainee saved successfully with username: {}", username);
-
-                // Return raw password to user
-                return Map.of("username", username, "password", rawPassword);
             }
+
+            trainer.setUsername(username);
+
+            if (trainer.getSpecialization() != null && trainer.getSpecialization().getTypeName() != null) {
+                log.info("Fetching specialization: {}", trainer.getSpecialization().getTypeName());
+
+                TrainingType specialization = trainingTypeRepository.findByTypeName(trainer.getSpecialization().getTypeName())
+                        .orElseGet(() -> {
+                            log.info("TrainingType '{}' not found. Creating new one.", trainer.getSpecialization().getTypeName());
+                            return trainingTypeRepository.save(new TrainingType(trainer.getSpecialization().getTypeName()));
+                        });
+
+                trainer.setSpecialization(specialization);
+            } else {
+                log.warn("No specialization provided for trainee!");
+            }
+            // Generate & encode password
+            String rawPassword = UserCredentialsUtil.generatePassword();
+            String encodedPassword = passwordEncoder.encode(rawPassword);
+            trainer.setPassword(encodedPassword);
+
+            trainerRepository.save(trainer);
+            log.info("Trainer saved successfully with username: {}", username);
+
+            return Map.of("username", username, "password", rawPassword);
         } catch (Exception e) {
-            log.error("Error while creating trainee", e);
+            log.error("Error while creating trainer", e);
             throw e;
         }
     }
 
     @Transactional
-    public void update(Trainer trainer,String username,String password) {
+    public void update(Trainer trainer, String username, String password) {
         log.info("Updating trainer: {}", trainer);
         if (!authenticationService.authenticate(trainer.getUsername(), password)) {
             throw new SecurityException("User " + trainer.getUsername() + " not authenticated, permission denied!");
@@ -77,7 +94,7 @@ public class TrainerServiceImpl implements TrainerService {
         try {
             if (trainerRepository.existsById(trainer.getId())) {
                 trainerRepository.save(trainer);
-                log.info("Trainer with username {} updated successfully.",username);
+                log.info("Trainer with username {} updated successfully.", username);
             } else {
                 log.warn("Trainer with ID {} not found.", trainer.getId());
             }
@@ -94,7 +111,8 @@ public class TrainerServiceImpl implements TrainerService {
             Trainer trainer = trainerOpt.get();
             trainer.setFirstName(updateDTO.getFirstName());
             trainer.setLastName(updateDTO.getLastName());
-            String newUsername = userCredentialsUtil.generateUsername(updateDTO.getFirstName(),updateDTO.getLastName());;
+            String newUsername = userCredentialsUtil.generateUsername(updateDTO.getFirstName(), updateDTO.getLastName());
+            ;
             trainer.setUsername(newUsername);
             trainerRepository.save(trainer);
             return Optional.of(trainer);
@@ -113,7 +131,7 @@ public class TrainerServiceImpl implements TrainerService {
     }
 
     @Transactional
-    public void changeTrainersPassword(String username, String oldPassword,String newPassword) {
+    public void changeTrainersPassword(String username, String oldPassword, String newPassword) {
         log.info("Changing password for trainer with username: {}", username);
         if (!authenticationService.authenticate(username, oldPassword)) {
             throw new SecurityException("Invalid username or password");
@@ -135,7 +153,7 @@ public class TrainerServiceImpl implements TrainerService {
     }
 
     @Transactional
-    public void changeTrainerActiveStatus(String username,String password,boolean isActive) {
+    public void changeTrainerActiveStatus(String username, String password, boolean isActive) {
         log.info("Changing active status of trainer with username {}", username);
         if (!authenticationService.authenticate(username, password)) {
             throw new SecurityException("User " + username + " not authenticated, permission denied!");
@@ -155,12 +173,12 @@ public class TrainerServiceImpl implements TrainerService {
 
     @Override
     public Optional<List<Trainer>> getUnassignedTrainers(String username) {
-        log.info("Get unassigned trainers for trainee {} ",username);
+        log.info("Get unassigned trainers for trainee {} ", username);
         return trainerRepository.getUnassignedTrainers(username);
     }
 
     @Override
-    public Optional<List<Trainer>> getUnassignedTrainers(String traineeUsername,  String username, String password) {
+    public Optional<List<Trainer>> getUnassignedTrainers(String traineeUsername, String username, String password) {
         if (!authenticationService.authenticate(username, password)) {
             throw new SecurityException("User " + username + " not authenticated, permission denied!");
         }
