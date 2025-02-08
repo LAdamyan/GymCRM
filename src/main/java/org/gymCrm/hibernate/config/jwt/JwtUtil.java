@@ -13,6 +13,7 @@ import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 @Component
 public class JwtUtil {
@@ -30,11 +31,12 @@ public class JwtUtil {
 
     }
 
-
-
     public String generateToken(String username, List<String> roles) {
         Map<String, Object> claims = new HashMap<>();
-        claims.put("roles", roles);
+        List<String> prefixedRoles = roles.stream()
+                .map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
+                .collect(Collectors.toList());
+        claims.put("roles", prefixedRoles);
 
         return Jwts.builder()
                 .claims(claims)

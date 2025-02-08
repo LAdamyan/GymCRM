@@ -22,7 +22,7 @@ public class CustomLogoutHandler implements LogoutHandler {
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
-            jwtUtil.blacklistToken(token); // Optional: Blacklist token
+            jwtUtil.blacklistToken(token);
         }
         SecurityContextHolder.clearContext();
     }

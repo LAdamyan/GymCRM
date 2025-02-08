@@ -43,17 +43,7 @@ import static org.gymCrm.hibernate.util.UserCredentialsUtil.generateUsername;
 public class TraineeController {
 
     private final TraineeServiceImpl traineeServiceImpl;
-    private final AuthenticationService authenticationService;
     private final TrainerRepository trainerRepository;
-
-    private void authenticate(String username, String password) {
-        log.info("Authenticating user: {}", username);
-        if (!authenticationService.authenticate(username, password)) {
-            log.error("Authentication failed for user: {}", username);
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid username or password");
-        }
-        log.info("Authentication successful for user: {}", username);
-    }
 
     @Operation(summary = "Register a new trainee", description = "Registers a new trainee.")
     @ApiResponses(value = {
@@ -95,7 +85,6 @@ public class TraineeController {
             @ApiResponse(responseCode = "404", description = "Trainee not found")
     })
     @GetMapping("/{username}")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<TraineeProfileDTO> getTraineeProfile(
             @PathVariable @NotBlank(message = "Username is required.") String username
             ) {
@@ -118,7 +107,6 @@ public class TraineeController {
             @ApiResponse(responseCode = "404", description = "Trainee not found")
     })
     @DeleteMapping("/{username}")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<Void> deleteTrainee(
             @PathVariable String username){
         String transactionId = MDC.get("transactionId");
@@ -137,7 +125,6 @@ public class TraineeController {
             @ApiResponse(responseCode = "404", description = "Trainee not found")
     })
     @PatchMapping("/{username}/status")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<Void> changeTraineeStatus(
             @PathVariable String username,
             @RequestParam String password,
@@ -160,7 +147,6 @@ public class TraineeController {
             @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     @PutMapping("/{traineeUsername}/trainers")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<List<TrainerDTO>> updateTraineeTrainers(
             @PathVariable String traineeUsername,
             @RequestBody @Valid UpdateTraineeTrainersDTO requestDTO
