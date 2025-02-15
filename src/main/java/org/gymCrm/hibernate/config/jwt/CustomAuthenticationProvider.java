@@ -12,6 +12,11 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+
+import javax.servlet.http.HttpServletRequest;
+
 @Slf4j
 @Component
 public class CustomAuthenticationProvider implements AuthenticationProvider {
@@ -31,9 +36,10 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         String username = authentication.getName();
         String password = authentication.getCredentials().toString();
+        String clientIP = getClientsIP();
 
-        if (bruteForceProtectionService.isBlocked(username)) {
-            throw new LockedException("User is blocked for 5 minutes due to multiple failed login attempts.");
+        if (bruteForceProtectionService.isBlocked(username) || bruteForceProtectionService.isBlocked(clientIP)) {
+            throw new LockedException("User/IP is blocked for 5 minutes due to multiple failed login attempts.");
         }
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(username);
@@ -48,6 +54,19 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
             bruteForceProtectionService.loginFailed(username);
             throw new BadCredentialsException("Invalid username or password.");
         }
+    }
+
+    private String getClientsIP() {
+        ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if(attrs == null){
+            return "UNKNOWN";
+        }
+        HttpServletRequest request = (HttpServletRequest) attrs.getRequest();
+        String ip = request.getHeader("X-Forwarded-For");
+        if(ip == null || ip.isEmpty()){
+            ip = request.getRemoteAddr();
+        }
+        return  ip;
     }
 
     @Override
