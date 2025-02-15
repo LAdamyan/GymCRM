@@ -1,103 +1,140 @@
 package org.gymCrm.hibernate.controller;
 
-import org.gymCrm.hibernate.model.Trainee;
-import org.gymCrm.hibernate.model.User;
-import org.gymCrm.hibernate.service.impl.UserDetailsServiceImpl;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.gymCrm.hibernate.config.jwt.JwtUtil;
+import org.gymCrm.hibernate.dto.LoginRequest;
 import org.gymCrm.hibernate.service.impl.UserServiceImpl;
+import org.gymCrm.hibernate.util.AuthenticationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@WebMvcTest(LoginController.class)
 class LoginControllerTest {
 
-    @InjectMocks
-    private LoginController loginController;
 
-    @Mock
-    private UserDetailsServiceImpl<User> userDetailsService;
+        @Autowired
+        private MockMvc mockMvc;
 
-    @Mock
-    private UserServiceImpl<User> userServiceImpl;
+        @MockBean
+        private AuthenticationService authenticationService;
 
-    private Trainee testUser;
+        @MockBean
+        private AuthenticationManager authenticationManager;
 
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
+        @MockBean
+        private JwtUtil jwtUtil;
 
-        testUser = new Trainee();
-        testUser.setUsername("john.doe");
-        testUser.setPassword("password1");
+        @MockBean
+        private UserServiceImpl userServiceImpl;
 
-    }
+        @Autowired
+        private ObjectMapper objectMapper;
 
-    @Test
-    void testLoginSuccess() {
+        @BeforeEach
+        public void setup() {
+            // Set up mock behavior before each test
+        }
 
-        when(userDetailsService.authenticate("john.doe", "password1")).thenReturn(true);
+        @Test
+        public void testLogin_Success() throws Exception {
+            // Mock the authentication service
+            String username = "testuser";
+            String password = "password";
+            String token = "mockJwtToken";
+            LoginRequest loginRequest = new LoginRequest();
+            loginRequest.setUsername(username);
+            loginRequest.setPassword(password);
 
-        ResponseEntity<String> response = loginController.login("john.doe", "password1");
+            // Mock behavior for authentication
+            when(authenticationService.authenticate(username, password)).thenReturn(true);
+            when(jwtUtil.generateToken(username, List.of("USER"))).thenReturn(token);
 
-        assertEquals("200 OK", response.getBody());
-        assertEquals(200, response.getStatusCodeValue());
-        verify(userDetailsService).authenticate("john.doe", "password1");
-    }
+            // Perform POST request to /login
+            mockMvc.perform(post("/login")
+                            .contentType("application/json")
+                            .content(objectMapper.writeValueAsString(loginRequest)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.token").value(token));
 
-    @Test
-    void testLoginFailure() {
-        when(userDetailsService.authenticate("john.doe", "wrongPassword")).thenReturn(false);
+            verify(authenticationService, times(1)).authenticate(username, password);
+            verify(jwtUtil, times(1)).generateToken(username, List.of("USER"));
+        }
 
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () ->
-                loginController.login("john.doe", "wrongPassword"));
+        @Test
+        public void testLogin_Failure_InvalidCredentials() throws Exception {
+            // Mock the authentication service for failed login
+            String username = "testuser";
+            String password = "wrongpassword";
+            LoginRequest loginRequest = new LoginRequest();
+            loginRequest.setUsername(username);
+            loginRequest.setPassword(password);
 
-        assertEquals(401, exception.getStatusCode().value());
-        assertEquals("Invalid username or password", exception.getReason());
-    }
+            when(authenticationService.authenticate(username, password)).thenReturn(false);
 
-    @Test
-    void testChangePasswordSuccess() {
-        when(userDetailsService.authenticate("john.doe", "password1")).thenReturn(true);
-        when(userServiceImpl.findByUsername("john.doe")).thenReturn(Optional.of(testUser));
+            // Perform POST request to /login
+            mockMvc.perform(post("/login")
+                            .contentType("application/json")
+                            .content(objectMapper.writeValueAsString(loginRequest)))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(content().string("Invalid username or password"));
+        }
 
-        ResponseEntity<String> response = loginController.changePassword("john.doe", "password1", "newPassword");
 
-        assertEquals("Password changed successfully", response.getBody());
-        assertEquals(200, response.getStatusCodeValue());
-        verify(userServiceImpl).changePassword("john.doe", "newPassword");
-    }
-    @Test
-    void testChangePasswordUserNotFound() {
-        when(userDetailsService.authenticate("john.doe", "password1")).thenReturn(true);
-        when(userServiceImpl.findByUsername("john.doe")).thenReturn(Optional.empty());
+        @Test
+        public void testChangePassword_Failure_InvalidOldPassword() throws Exception {
+            // Prepare input
+            String username = "testuser";
+            String oldPassword = "wrongOldPassword";
+            String newPassword = "newpassword";
 
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () ->
-                loginController.changePassword("john.doe", "password1", "newPassword"));
+            // Mock behavior for failed authentication
+            when(authenticationService.authenticate(username, oldPassword)).thenReturn(false);
 
-        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
-        assertEquals("User not found", exception.getReason());
+            // Perform PUT request to change password
+            mockMvc.perform(put("/change-password")
+                            .param("username", username)
+                            .param("oldPassword", oldPassword)
+                            .param("newPassword", newPassword))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(content().string("Invalid old password"));
 
-    }
-    @Test
-    void testChangePasswordInvalidOldPassword() {
-        when(userDetailsService.authenticate("john.doe", "wrongPassword")).thenReturn(false);
+            verify(authenticationService, times(1)).authenticate(username, oldPassword);
+        }
 
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () ->
-                loginController.changePassword("john.doe", "wrongPassword", "newPassword"));
+        @Test
+        public void testChangePassword_Failure_UserNotFound() throws Exception {
+            // Prepare input
+            String username = "testuser";
+            String oldPassword = "oldpassword";
+            String newPassword = "newpassword";
 
-        assertEquals(401, exception.getStatusCode().value());
-        assertEquals("Invalid old password", exception.getReason());
-    }
+            // Mock behavior for user not found
+            when(authenticationService.authenticate(username, oldPassword)).thenReturn(true);
+            when(userServiceImpl.findByUsername(username)).thenReturn(Optional.empty());
 
+            // Perform PUT request to change password
+            mockMvc.perform(put("/change-password")
+                            .param("username", username)
+                            .param("oldPassword", oldPassword)
+                            .param("newPassword", newPassword))
+                    .andExpect(status().isNotFound())
+                    .andExpect(content().string("User not found"));
+
+            verify(authenticationService, times(1)).authenticate(username, oldPassword);
+        }
 }

@@ -4,6 +4,7 @@ package org.gymCrm.hibernate.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -19,35 +20,30 @@ import org.gymCrm.hibernate.model.Trainee;
 import org.gymCrm.hibernate.model.Trainer;
 import org.gymCrm.hibernate.model.TrainingType;
 import org.gymCrm.hibernate.repo.TrainerRepository;
-import org.gymCrm.hibernate.service.UserDetailsService;
+import org.gymCrm.hibernate.util.AuthenticationService;
 import org.gymCrm.hibernate.service.impl.TraineeServiceImpl;
+import org.gymCrm.hibernate.util.UserCredentialsUtil;
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.gymCrm.hibernate.util.UserCredentialsUtil.generateUsername;
+
 @Slf4j
 @RestController
 @RequestMapping("/trainees")
 @RequiredArgsConstructor
+@SecurityRequirement(name = "BearerAuth")
 public class TraineeController {
 
     private final TraineeServiceImpl traineeServiceImpl;
-    private final UserDetailsService<Trainee> userDetailsService;
     private final TrainerRepository trainerRepository;
-
-    private void authenticate(String username, String password) {
-        log.info("Authenticating user: {}", username);
-        if (!userDetailsService.authenticate(username, password)) {
-            log.error("Authentication failed for user: {}", username);
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid username or password");
-        }
-        log.info("Authentication successful for user: {}", username);
-    }
 
     @Operation(summary = "Register a new trainee", description = "Registers a new trainee.")
     @ApiResponses(value = {
@@ -75,11 +71,9 @@ public class TraineeController {
         trainee.setAddress(address);
         trainee.setActive(true);
 
-        traineeServiceImpl.create(trainee);
+        log.info("Trainee after creation: {}", trainee);
 
-        Map<String, String> response = new HashMap<>();
-        response.put("username", trainee.getUsername());
-        response.put("password", trainee.getPassword());
+        Map<String, String> response = traineeServiceImpl.create(trainee);
         log.info("[{}] Trainee registered successfully with username: {}", transactionId, trainee.getUsername());
         return ResponseEntity.ok(response);
     }
@@ -92,11 +86,9 @@ public class TraineeController {
     })
     @GetMapping("/{username}")
     public ResponseEntity<TraineeProfileDTO> getTraineeProfile(
-            @PathVariable @NotBlank(message = "Username is required.") String username,
-            @RequestHeader("X-Auth-Username") String authUsername,
-            @RequestHeader("X-Auth-Password") String authPassword) {
+            @PathVariable @NotBlank(message = "Username is required.") String username
+            ) {
 
-        authenticate(authUsername, authPassword);
         String transactionId = MDC.get("transactionId");
         log.info("[{}] GET /trainees/{} called", transactionId, username);
 
@@ -116,13 +108,10 @@ public class TraineeController {
     })
     @DeleteMapping("/{username}")
     public ResponseEntity<Void> deleteTrainee(
-            @PathVariable String username,
-            @RequestHeader("X-Auth-Username") String authUsername,
-            @RequestHeader("X-Auth-Password") String authPassword) {
+            @PathVariable String username){
         String transactionId = MDC.get("transactionId");
         log.info("[{}] DELETE /trainees/{} called", transactionId, username);
 
-        authenticate(authUsername, authPassword);
 
         traineeServiceImpl.delete(username);
         log.info("[{}] Trainee with username: {} deleted successfully", transactionId, username);
@@ -139,11 +128,8 @@ public class TraineeController {
     public ResponseEntity<Void> changeTraineeStatus(
             @PathVariable String username,
             @RequestParam String password,
-            @RequestParam boolean isActive,
-            @RequestHeader("X-Auth-Username") String authUsername,
-            @RequestHeader("X-Auth-Password") String authPassword) {
+            @RequestParam boolean isActive) {
         String transactionId = MDC.get("transactionId");
-        authenticate(authUsername, authPassword);
 
         log.info("[{}] PATCH /trainees/{}/status called with isActive: {}", transactionId, username);
 
