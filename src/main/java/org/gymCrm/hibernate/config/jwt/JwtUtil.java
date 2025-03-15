@@ -5,30 +5,27 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-
+@Slf4j
 @Component
 public class JwtUtil {
 
     private final SecretKey secretKey;
     private final Set<String> blacklistedTokens = ConcurrentHashMap.newKeySet();
 
-    public JwtUtil(SecretKey secretKey) {
-        this.secretKey = secretKey;
-    }
-    public JwtUtil() throws NoSuchAlgorithmException {
-        KeyGenerator keyGenerator = KeyGenerator.getInstance("HmacSHA256");
-        keyGenerator.init(256);
-        this.secretKey = keyGenerator.generateKey();
-
+    public JwtUtil(@Value("${security.jwt.secret}") String secret) {
+        this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
     public String generateToken(String username, List<String> roles) {
@@ -43,7 +40,7 @@ public class JwtUtil {
                 .subject(username)
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + (60 * 60 * 1000))) // 1 hour expiration
-                .signWith(secretKey, SignatureAlgorithm.HS256)
+                .signWith(secretKey, Jwts.SIG.HS256)
                 .compact();
     }
 
@@ -64,18 +61,18 @@ public class JwtUtil {
     }
 
     public boolean validateToken(String token, String username) {
-        final String extractedUsername = extractUsername(token);
-        return extractedUsername.equals(username) && !isTokenExpired(token) && !isTokenBlacklisted(token);
-    }
-
-    public Key getSigningKey() {
-        byte[] keyBytes = secretKey.getEncoded();
-        return Keys.hmacShaKeyFor(keyBytes);
+        try {
+            final String extractedUsername = extractUsername(token);
+            return extractedUsername.equals(username) && !isTokenExpired(token) && !isTokenBlacklisted(token);
+        } catch (Exception e) {
+            log.error("Invalid JWT Token: {}", e.getMessage());
+            return false;
+        }
     }
 
     private Claims extractAllClaims(String token) {
         return Jwts.parser()
-                .setSigningKey(getSigningKey())
+                .setSigningKey(secretKey)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
@@ -83,5 +80,4 @@ public class JwtUtil {
 
     public boolean isTokenExpired(String token) {
         return extractAllClaims(token).getExpiration().before(new Date());
-    }
-}
+    }}
