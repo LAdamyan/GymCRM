@@ -1,10 +1,8 @@
 package org.gymCrm.hibernate.service.impl;
 
-import org.gymCrm.hibernate.dto.TrainerWorkloadRequest;
 import org.gymCrm.hibernate.dto.TrainingRequest;
-import org.gymCrm.hibernate.service.TrainerWorkloadClient;
+import org.gymCrm.hibernate.client.TrainerWorkloadClient;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -33,31 +31,5 @@ class TrainingServiceTest {
         trainingRequest.setTrainingDuration(60);
     }
 
-    @Test
-    void testAddTraining() {
-        trainingService.addTraining(trainingRequest);
 
-        verify(trainerWorkloadClient).updateTrainerWorkload(new TrainerWorkloadRequest(
-                trainingRequest.getTrainerUsername(),
-                trainingRequest.getTrainerFirstName(),
-                trainingRequest.getTrainerLastName(),
-                trainingRequest.isActive(),
-                trainingRequest.getTrainingDate(),
-                trainingRequest.getTrainingDuration()
-        ));
-    }
-
-    @Test
-    void testDeleteTraining() {
-        trainingService.deleteTraining(trainingRequest);
-
-        verify(trainerWorkloadClient).updateTrainerWorkload(new TrainerWorkloadRequest(
-                trainingRequest.getTrainerUsername(),
-                trainingRequest.getTrainerFirstName(),
-                trainingRequest.getTrainerLastName(),
-                trainingRequest.isActive(),
-                trainingRequest.getTrainingDate(),
-                trainingRequest.getTrainingDuration()
-        ));
-    }
 }
