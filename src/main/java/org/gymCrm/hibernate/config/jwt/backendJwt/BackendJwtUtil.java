@@ -16,9 +16,6 @@ public class BackendJwtUtil {
 
     private final SecretKey secretKey;
 
-    @Value("${backend.secret.key}")
-    private String backendSecretKey;
-
     public BackendJwtUtil(@Value("${backend.secret.key}") String backendSecretKey) {
         if (backendSecretKey == null || backendSecretKey.isEmpty()) {
             log.error("[BackendJwtUtil] Backend secret key is not configured properly!");
@@ -30,27 +27,26 @@ public class BackendJwtUtil {
 
     }
     public String generateBackendToken() {
-        String token = Jwts.builder()
-                .setSubject("main-microservice") // Subject to identify the service
-                .setIssuedAt(new Date()) // Token issuance time
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60)) // Token valid for 1 hour
-                .signWith(secretKey, SignatureAlgorithm.HS256) // Sign with the secret key
+        return Jwts.builder()
+                .setSubject("main-microservice")
+                .setIssuer("main-microservice")       // Required
+                .setAudience("trainer-workload-service") // Required
+                .setExpiration(new Date(System.currentTimeMillis() + 3600000)) // 1 hour
+                .signWith(secretKey, SignatureAlgorithm.HS256) // Use backend.secret.key
                 .compact();
 
-        log.info("[BackendJwtUtil] Generated Backend JWT Token: {}", token); // Log generated token
-        return token;
     }
 
     public boolean validateBackendToken(String token) {
         try {
             Jwts.parser()
-                    .setSigningKey(secretKey) // Validate using the secret key
+                    .setSigningKey(secretKey)
                     .build()
-                    .parseClaimsJws(token); // Parse token claims
-            log.info("[BackendJwtUtil] Backend JWT Token is valid: {}", token); // Log token validation success
+                    .parseClaimsJws(token);
+            log.info("[BackendJwtUtil] Backend JWT Token is valid: {}", token);
             return true;
         } catch (Exception e) {
-            log.error("[BackendJwtUtil] Error during token validation: {}", e.getMessage()); // Log validation failure
+            log.error("[BackendJwtUtil] Error during token validation: {}", e.getMessage());
             return false;
         }
     }

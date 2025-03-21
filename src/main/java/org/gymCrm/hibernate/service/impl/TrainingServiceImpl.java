@@ -26,13 +26,8 @@ public class TrainingServiceImpl implements TrainingService {
     private final TrainingRepository trainingRepository;
 
     @Autowired
-    private BackendJwtUtil backendJwtUtil;
-
-    @Autowired
     private TrainerWorkloadClient trainerWorkloadClient;
 
-    @Autowired
-    private FeignClientInterceptor feignClientInterceptor;
 
     public TrainingServiceImpl(TrainingRepository trainingRepository) {
         this.trainingRepository = trainingRepository;
@@ -48,14 +43,8 @@ public class TrainingServiceImpl implements TrainingService {
             throw e;
         }
     }
-
-    @CircuitBreaker(name = "trainerWorkloadService", fallbackMethod = "fallbackUpdateTrainerWorkload")
-    public void updateTrainerWorkload(TrainerWorkloadRequest request) {
-        trainerWorkloadClient.updateTrainerWorkload(request);
-    }
-
+    
     public void addTraining(TrainingRequest request) {
-        String token = "Bearer " + backendJwtUtil.generateBackendToken();
         TrainerWorkloadRequest workloadRequest = new TrainerWorkloadRequest(
                 request.getTrainerUsername(),
                 request.getTrainerFirstName(),
@@ -63,13 +52,12 @@ public class TrainingServiceImpl implements TrainingService {
                 request.isActive(),
                 request.getTrainingDate(),
                 request.getTrainingDuration(),
-                "ADD" // Action type
+                "ADD"
         );
-        updateTrainerWorkload(workloadRequest);
+        trainerWorkloadClient.updateTrainerWorkload(workloadRequest);
     }
 
     public void deleteTraining(TrainingRequest request) {
-        String token = "Bearer " + backendJwtUtil.generateBackendToken();
         TrainerWorkloadRequest workloadRequest = new TrainerWorkloadRequest(
                 request.getTrainerUsername(),
                 request.getTrainerFirstName(),
@@ -77,17 +65,12 @@ public class TrainingServiceImpl implements TrainingService {
                 request.isActive(),
                 request.getTrainingDate(),
                 request.getTrainingDuration(),
-                "DELETE" // Action type
+                "DELETE"
         );
-        updateTrainerWorkload(workloadRequest);
+        trainerWorkloadClient.updateTrainerWorkload(workloadRequest);
     }
 
-    public void fallbackUpdateTrainerWorkload(TrainerWorkloadRequest request, Throwable t) {
-        log.error("Circuit Breaker triggered: Unable to update trainer workload. Request: {}. Error: {}",
-                request, t.getMessage(), t);
-    }
-
-    public Optional<List<Training>> selectByType(TrainingType type) {
+      public Optional<List<Training>> selectByType(TrainingType type) {
         try {
             List<Training> trainings = trainingRepository.findByTrainingType(type);
             return Optional.ofNullable(trainings);

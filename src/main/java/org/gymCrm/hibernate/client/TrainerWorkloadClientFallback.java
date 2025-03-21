@@ -26,7 +26,7 @@ public class TrainerWorkloadClientFallback implements TrainerWorkloadClient {
                 .trainerUsername(trainerUsername)
                 .year(year)
                 .month(month)
-                .totalHours(0) // Default hours set to 0
+                .totalHours(0)
                 .build();
     }
 }

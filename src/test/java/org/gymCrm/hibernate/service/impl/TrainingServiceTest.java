@@ -2,6 +2,7 @@ package org.gymCrm.hibernate.service.impl;
 
 import org.gymCrm.hibernate.dto.TrainingRequest;
 import org.gymCrm.hibernate.client.TrainerWorkloadClient;
+import org.gymCrm.hibernate.service.TrainingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
