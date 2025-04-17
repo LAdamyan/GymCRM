@@ -1,26 +1,24 @@
 package org.gymCrm.hibernate.controller;
 
-
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.gymCrm.hibernate.dto.TrainingRequest;
 import org.gymCrm.hibernate.dto.training.AddTrainingDTO;
 import org.gymCrm.hibernate.dto.training.TraineeTrainingResponse;
 import org.gymCrm.hibernate.dto.training.TrainingDTO;
 import org.gymCrm.hibernate.dto.training.TrainingTypeDTO;
 import org.gymCrm.hibernate.model.Training;
 import org.gymCrm.hibernate.model.TrainingType;
+import org.gymCrm.hibernate.service.TrainingService;
 import org.gymCrm.hibernate.service.impl.TrainingServiceImpl;
 import org.slf4j.MDC;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
@@ -29,13 +27,16 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
+
 @RestController
 @RequestMapping("/trainings")
-@RequiredArgsConstructor
 public class TrainingController {
 
     private final TrainingServiceImpl trainingServiceImpl;
 
+    public TrainingController(TrainingServiceImpl trainingServiceImpl) {
+        this.trainingServiceImpl = trainingServiceImpl;
+    }
 
     @Operation(summary = "Add a new training", description = "Creates a new training record.")
     @ApiResponses(value = {
@@ -170,6 +171,18 @@ public class TrainingController {
         log.info("[{}] Successfully retrieved {} training types", transactionId, trainingTypeDTOs.size());
 
         return ResponseEntity.ok(trainingTypeDTOs);
+    }
+
+    @PostMapping("/addTraining")
+    public ResponseEntity<String> addTraining(@RequestBody TrainingRequest request) {
+        trainingServiceImpl.addTraining(request);
+        return ResponseEntity.ok("Training added successfully!");
+    }
+
+    @DeleteMapping("/deleteTraining")
+    public ResponseEntity<String> deleteTraining(@RequestBody TrainingRequest request) {
+        trainingServiceImpl.deleteTraining(request);
+        return ResponseEntity.ok("Training deleted successfully!");
     }
 
 

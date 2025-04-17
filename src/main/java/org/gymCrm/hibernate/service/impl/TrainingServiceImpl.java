@@ -1,10 +1,17 @@
 package org.gymCrm.hibernate.service.impl;
 
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.extern.slf4j.Slf4j;
+import org.gymCrm.hibernate.client.TrainerWorkloadClient;
+import org.gymCrm.hibernate.config.FeignClientInterceptor;
+import org.gymCrm.hibernate.config.jwt.backendJwt.BackendJwtUtil;
+import org.gymCrm.hibernate.dto.TrainerWorkloadRequest;
+import org.gymCrm.hibernate.dto.TrainingRequest;
 import org.gymCrm.hibernate.model.Training;
 import org.gymCrm.hibernate.model.TrainingType;
 import org.gymCrm.hibernate.repo.TrainingRepository;
 import org.gymCrm.hibernate.service.TrainingService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +24,9 @@ import java.util.Optional;
 public class TrainingServiceImpl implements TrainingService {
 
     private final TrainingRepository trainingRepository;
+
+    @Autowired
+    private TrainerWorkloadClient trainerWorkloadClient;
 
 
     public TrainingServiceImpl(TrainingRepository trainingRepository) {
@@ -33,8 +43,34 @@ public class TrainingServiceImpl implements TrainingService {
             throw e;
         }
     }
+    
+    public void addTraining(TrainingRequest request) {
+        TrainerWorkloadRequest workloadRequest = new TrainerWorkloadRequest(
+                request.getTrainerUsername(),
+                request.getTrainerFirstName(),
+                request.getTrainerLastName(),
+                request.isActive(),
+                request.getTrainingDate(),
+                request.getTrainingDuration(),
+                "ADD"
+        );
+        trainerWorkloadClient.updateTrainerWorkload(workloadRequest);
+    }
 
-    public Optional<List<Training>> selectByType(TrainingType type) {
+    public void deleteTraining(TrainingRequest request) {
+        TrainerWorkloadRequest workloadRequest = new TrainerWorkloadRequest(
+                request.getTrainerUsername(),
+                request.getTrainerFirstName(),
+                request.getTrainerLastName(),
+                request.isActive(),
+                request.getTrainingDate(),
+                request.getTrainingDuration(),
+                "DELETE"
+        );
+        trainerWorkloadClient.updateTrainerWorkload(workloadRequest);
+    }
+
+      public Optional<List<Training>> selectByType(TrainingType type) {
         try {
             List<Training> trainings = trainingRepository.findByTrainingType(type);
             return Optional.ofNullable(trainings);

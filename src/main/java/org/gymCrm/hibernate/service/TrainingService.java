@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface TrainingService {
+
     void create(Training training);
     Optional<List<Training>> selectByType(TrainingType type);
     Optional<List<Training>> getTraineeTrainings(

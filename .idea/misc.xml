@@ -5,6 +5,8 @@
     <option name="originalFiles">
       <list>
         <option value="$PROJECT_DIR$/pom.xml" />
+        <option value="$USER_HOME$/Downloads/trainer-workload-service/trainer-workload-service/pom.xml" />
+        <option value="$USER_HOME$/Downloads/eureka-server/eureka-server/pom.xml" />
       </list>
     </option>
   </component>
